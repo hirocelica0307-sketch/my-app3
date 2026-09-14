@@ -363,63 +363,110 @@ ruby.fg > rt {
 }
 .selected ruby.fg > rt { color: var(--accent); }
 
-/* ===== 路線選択（発車標） ===== */
-.board-panel { min-width: 74%; }
-.board-head {
-  font-size: calc(var(--scale) * 4.2px);
-  letter-spacing: 0.18em;
-  color: var(--accent);
-  margin-bottom: 0.9em;
-  line-height: 2.2;
+/* ===== 路線選択（地図の上に重ねる） ===== */
+.mapselect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
-.board { list-style: none; margin: 0; padding: 0; }
-.board-row {
-  display: grid;
-  grid-template-columns: 1.2em 3.4em 1fr 1fr 6em 4.6em;
-  align-items: center;
-  gap: 0.5em;
-  padding: 0.3em 0.5em;
-  font-size: calc(var(--scale) * 3.8px);
-  line-height: 2.3;
-  color: var(--pending);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.board-row.selected {
-  color: var(--ink);
-  background: rgba(242, 194, 48, 0.16);
-  box-shadow: inset 2px 0 0 var(--accent);
-}
-.board-cursor { color: var(--accent); }
-.board-type {
-  font-size: 0.8em;
-  background: rgba(255,255,255,0.1);
-  padding: 0 0.3em;
+.mapselect-head {
+  position: absolute;
+  top: 2%;
+  left: 0; right: 0;
   text-align: center;
+  font-size: calc(var(--scale) * 3.8px);
+  letter-spacing: 0.2em;
+  line-height: 2.4;
+  color: var(--accent);
+  text-shadow: 0 1px 0 #000, 0 0 6px #000;
 }
-.board-name, .board-dest { letter-spacing: 0.08em; }
-.board-stars { font-size: 0.8em; color: var(--accent); letter-spacing: 0.04em; }
-.board-best {
-  font-family: var(--font-mono);
-  font-size: 0.85em;
-  text-align: right;
-  color: var(--ink-dim);
-}
-.board-row.selected .board-best { color: var(--accent); }
 
-.board-detail {
+/*
+ * 選択中の路線名。海の上（画面上部）に置く。
+ * 前後の路線名は左右に小さく添えるだけにする。
+ * 縦に3つ並べると北側の路線図に重なって読めなくなる。
+ */
+.mapselect-now {
+  position: absolute;
+  top: 7%;
+  left: 0; right: 0;
   display: flex;
-  gap: 1.2em;
   align-items: baseline;
-  margin-top: 0.8em;
-  font-size: calc(var(--scale) * 3.2px);
-  line-height: 2.2;
-  color: var(--ink-dim);
+  justify-content: center;
+  gap: 1.2em;
 }
-.board-detail-word { color: var(--accent); letter-spacing: 0.12em; }
-.board-nickname {
+.ms-prev, .ms-next {
+  font-size: calc(var(--scale) * 2.8px);
+  color: rgba(200, 210, 220, 0.45);
+  text-shadow: 0 1px 0 #000;
+}
+.ms-prev::before { content: '↑ '; }
+.ms-next::after { content: ' ↓'; }
+.ms-cur {
+  font-size: calc(var(--scale) * 5.5px);
+  line-height: 2.1;
+  color: var(--ink);
+  letter-spacing: 0.1em;
+  text-shadow: 0 1px 0 #000, 0 0 5px #000;
+}
+.ms-cur::before { content: '▸ '; color: var(--accent); }
+.ms-cur::after { content: ' ◂'; color: var(--accent); }
+
+/* 選択中の路線の詳細カード */
+.mapselect-card {
+  position: absolute;
+  left: 3%; right: 3%;
+  bottom: 7%;
+  background: rgba(10, 13, 18, 0.88);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-color, #0072bc);
+  padding: 0.35em 0.8em 0.45em;
+}
+.ms-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  font-size: calc(var(--scale) * 3.8px);
+  line-height: 2.1;
+  letter-spacing: 0.08em;
+}
+.ms-type {
+  font-size: 0.6em;
+  background: var(--line-color, #0072bc);
+  color: #fff;
+  padding: 0 0.4em;
+  letter-spacing: 0.1em;
+}
+.ms-nick { font-size: 0.6em; color: #7fb98a; }
+.ms-route {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  font-size: calc(var(--scale) * 3.2px);
+  line-height: 2.3;
+}
+.ms-arrow { color: var(--accent); font-family: var(--font-mono); }
+.ms-facts {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9em;
   font-size: calc(var(--scale) * 3px);
-  color: #7fb98a;
-  margin-top: 0.2em;
+  color: var(--ink-dim);
+  margin-top: 0.25em;
+}
+.ms-stars { color: var(--accent); letter-spacing: 0.04em; }
+.ms-word { color: var(--ink); }
+.ms-best { margin-left: auto; font-family: var(--font-mono); color: var(--accent); }
+
+.mapselect-hint {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 2%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: calc(var(--scale) * 2.8px);
+  color: var(--ink-dim);
+  text-shadow: 0 1px 0 #000;
 }
 
 /* ミュート中の表示。音が出ない理由が分からないと混乱するので必ず出す。 */
@@ -433,4 +480,14 @@ ruby.fg > rt {
   color: var(--ink-dim);
   padding: 0.2em 0.6em;
   pointer-events: none;
+}
+
+/* その回の天気。プレイのたびに変わるので、何が起きているか分かるように出す。 */
+.weather-badge {
+  font-size: 0.9em;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  background: rgba(255,255,255,0.08);
+  padding: 0 0.45em;
+  border-radius: 1px;
 }

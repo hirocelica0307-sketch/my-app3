@@ -21,6 +21,7 @@ export function PlayScreen({ snap }: Props) {
         <span className="hud-value">{snap.remainSec.toFixed(1)}s</span>
         <span className="hud-value">{yen(snap.fare)}</span>
         {snap.combo > 1 && <span className="combo">COMBO {snap.combo}</span>}
+        <span className="weather-badge">{snap.weatherLabel}</span>
       </div>
 
       <div className="toasts">

@@ -18,7 +18,8 @@ export type LandmarkId =
   | 'ruins' | 'somen' | 'ramen' | 'horseshoecrab' | 'shinkansen'
   | 'shrinehall' | 'atom' | 'junction' | 'gate'
   | 'pagoda' | 'turtle' | 'tatami' | 'ferry'
-  | 'setoohashi' | 'cave' | 'udon' | 'onsen';
+  | 'setoohashi' | 'cave' | 'udon' | 'onsen'
+  | 'sword' | 'pottery' | 'oyster' | 'heart' | 'kombinat';
 
 export interface Landmark {
   readonly sprite: LandmarkId;
@@ -69,6 +70,8 @@ export interface Line {
   readonly stops: readonly StationId[];
   readonly segments: readonly Segment[];
   readonly fareRule: string;
+  /** 新幹線・特急の料金を上乗せする。 */
+  readonly surchargeRule?: 'shinkansen' | 'ltd-express';
   readonly difficultyOverride?: number;
   readonly hideRomajiDefault?: boolean;
   readonly scopeNote?: string;

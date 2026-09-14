@@ -13,63 +13,58 @@ function difficultyOf(line: Line): { stars: string; word: string } {
   const d = line.difficultyOverride ?? 40;
   if (d < 20) return { stars: '★☆☆☆☆', word: 'やさしい' };
   if (d < 32) return { stars: '★★☆☆☆', word: 'すこしやさしい' };
-  if (d < 45) return { stars: '★★★☆☆', word: 'ふつう' };
-  if (d < 65) return { stars: '★★★★☆', word: 'むずかしい' };
+  if (d < 50) return { stars: '★★★☆☆', word: 'ふつう' };
+  if (d < 76) return { stars: '★★★★☆', word: 'むずかしい' };
   return { stars: '★★★★★', word: 'とてもむずかしい' };
 }
 
-/** 岡山駅の発車標に見立てた路線選択。すべてふりがな付き。 */
+/**
+ * 路線選択。
+ * 背景の Canvas に岡山県の路線図が描かれ、選んだ路線が光る。
+ * 日本語は Canvas に描けないので、こちら（DOM）で地図の上に重ねる。
+ */
 export function LineSelectScreen({ lines, index, bestOf }: Props) {
   const current = lines[index]!;
-  const dest = getStation(current.stops[current.stops.length - 1]!);
+  const d = difficultyOf(current);
   const origin = getStation(current.stops[0]!);
+  const dest = getStation(current.stops[current.stops.length - 1]!);
+  const best = bestOf(current.id);
 
   return (
-    <div className="overlay">
-      <div className="panel board-panel">
-        <div className="board-head">
-          <Furigana kana="ろせん">路線</Furigana>を えらんでください
-        </div>
-
-        <ul className="board">
-          {lines.map((line, i) => {
-            const d = difficultyOf(line);
-            const to = getStation(line.stops[line.stops.length - 1]!);
-            const best = bestOf(line.id);
-            return (
-              <li key={line.id} className={`board-row${i === index ? ' selected' : ''}`}>
-                <span className="board-cursor">{i === index ? '▸' : ''}</span>
-                <span className="board-type">{line.trainType}</span>
-                <span className="board-name">
-                  <Furigana kana={line.nameKana}>{line.nameJp}</Furigana>
-                </span>
-                <span className="board-dest">
-                  <Furigana kana={to.kana}>{to.kanji}</Furigana>
-                </span>
-                <span className="board-stars">{d.stars}</span>
-                <span className="board-best">
-                  {best === null ? '—' : `¥${best.toLocaleString('ja-JP')}`}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div className="board-detail">
-          <span className="board-detail-word">{difficultyOf(current).word}</span>
-          <span>
-            <Furigana kana={origin.kana}>{origin.kanji}</Furigana>
-            {' 〜 '}
-            <Furigana kana={dest.kana}>{dest.kanji}</Furigana>
-            {`　${current.stops.length}えき`}
-          </span>
-        </div>
-        {current.nickname !== undefined && (
-          <div className="board-nickname">「{current.nickname}」ともよばれます</div>
-        )}
-
-        <div className="keyhint">↑↓ でえらんで Enter　[Esc] もどる</div>
+    <div className="mapselect">
+      <div className="mapselect-head">
+        <Furigana kana="ろせん">路線</Furigana>を えらんでください
       </div>
+
+      {/* 選択中の路線名だけを大きく。前後の名前まで出すと地図に重なって読めない */}
+      <div className="mapselect-now">
+        <span className="ms-prev">{lines[(index - 1 + lines.length) % lines.length]!.nameJp}</span>
+        <span className="ms-cur">
+          <Furigana kana={current.nameKana}>{current.nameJp}</Furigana>
+        </span>
+        <span className="ms-next">{lines[(index + 1) % lines.length]!.nameJp}</span>
+      </div>
+
+      <div className="mapselect-card" style={{ ['--line-color' as string]: current.lineColor }}>
+        <div className="ms-title">
+          <span className="ms-type">{current.trainType}</span>
+          <Furigana kana={current.nameKana}>{current.nameJp}</Furigana>
+          {current.nickname !== undefined && <span className="ms-nick">（{current.nickname}）</span>}
+        </div>
+        <div className="ms-route">
+          <Furigana kana={origin.kana}>{origin.kanji}</Furigana>
+          <span className="ms-arrow">▸▸</span>
+          <Furigana kana={dest.kana}>{dest.kanji}</Furigana>
+        </div>
+        <div className="ms-facts">
+          <span className="ms-stars">{d.stars}</span>
+          <span className="ms-word">{d.word}</span>
+          <span>{current.stops.length}えき</span>
+          <span className="ms-best">{best === null ? 'きろくなし' : `¥${best.toLocaleString('ja-JP')}`}</span>
+        </div>
+      </div>
+
+      <div className="mapselect-hint">↑↓ で えらんで Enter　[Esc] もどる</div>
     </div>
   );
 }
