@@ -11,6 +11,19 @@ export type SceneKind =
 export type StationSpriteKind =
   | 'urban' | 'rural' | 'terminal' | 'tram-stop' | 'shinkansen' | 'unmanned';
 
+/** 名所・特産のドット絵の種類。render/sprites/landmarks.ts と対応する。 */
+export type LandmarkId =
+  | 'castle' | 'peach' | 'kura' | 'denim' | 'dome' | 'campus'
+  | 'torii' | 'wisteria' | 'brickkiln' | 'brewery' | 'thatched'
+  | 'ruins' | 'somen' | 'ramen' | 'horseshoecrab' | 'shinkansen'
+  | 'shrinehall' | 'atom' | 'junction' | 'gate';
+
+export interface Landmark {
+  readonly sprite: LandmarkId;
+  /** 券面やキャプションに出す名前。 */
+  readonly label: string;
+}
+
 export interface Station {
   readonly id: StationId;
   readonly kanji: string;
@@ -20,6 +33,8 @@ export interface Station {
   /** 難読駅。難易度計算に使う。 */
   readonly rare?: boolean;
   readonly sprite?: StationSpriteKind;
+  /** その駅ならではの名所・特産。確証が無い駅は空にしておく（推測で埋めない）。 */
+  readonly landmarks?: readonly Landmark[];
   /** 停車時に出すトリビア。 */
   readonly note?: string;
   /** 読みの出典を確認済みか。 */
@@ -43,7 +58,10 @@ export interface Line {
   /** HUD・方向幕・切符の帯に使う路線カラー。 */
   readonly lineColor: string;
   readonly vehicle: VehicleId;
+  /** 下り方向の行先。折り返すと origin が行先になる。 */
   readonly destination: string;
+  /** 上り方向（折り返し後）の行先。 */
+  readonly originName: string;
   readonly trainType: string;
   /** 起点→終点の順。 */
   readonly stops: readonly StationId[];

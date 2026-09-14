@@ -1,6 +1,6 @@
 import type { Line, SceneKind, StationId } from '../types';
 
-/** 駅列と区間距離から segments を組み立てる小さなヘルパ。 */
+/** 駅列と起点からの累計キロから segments を組み立てる。 */
 function buildSegments(
   stops: readonly StationId[],
   kmFromOrigin: readonly number[],
@@ -14,16 +14,27 @@ function buildSegments(
   }));
 }
 
+/** 岡山県内を東端から西端まで。岡山駅は途中駅になる。 */
 const STOPS: readonly StationId[] = [
-  'okayama', 'kitanagase', 'niwase', 'nakashou', 'kurashiki',
-  'nishiachi', 'shinkurashiki', 'konkou', 'kamogata', 'satoshou', 'kasaoka',
+  'mitsuishi', 'yoshinaga', 'wake', 'kumayama', 'mantomi', 'seto', 'jouto',
+  'higashi-okayama', 'takashima', 'nishigawara', 'okayama',
+  'kitanagase', 'niwase', 'nakashou', 'kurashiki', 'nishiachi',
+  'shinkurashiki', 'konkou', 'kamogata', 'satoshou', 'kasaoka',
 ];
 
-/** 岡山からの営業キロ。 */
-const KM = [0, 2.7, 5.5, 11.0, 15.9, 19.9, 25.0, 30.6, 34.4, 38.0, 43.6];
+/** 三石からの累計営業キロ。 */
+const KM = [
+  0, 5.4, 11.7, 16.2, 19.8, 23.4, 27.4,
+  31.5, 34.3, 36.2, 38.6,
+  41.3, 44.1, 49.6, 54.5, 58.5,
+  63.6, 69.2, 73.0, 76.6, 82.2,
+];
 
+/** 区間ごとの風景。県東部は山あい、岡山近郊は市街、西部は田園。 */
 const SCENES: readonly SceneKind[] = [
-  'city', 'city', 'suburb', 'suburb', 'suburb',
+  'mountain', 'mountain', 'river', 'rural', 'rural', 'rural',
+  'suburb', 'suburb', 'city', 'city',
+  'city', 'suburb', 'suburb', 'suburb', 'rural',
   'rural', 'rural', 'rural', 'rural', 'rural',
 ];
 
@@ -35,9 +46,10 @@ export const SANYO_MAIN_DOWN: Line = {
   lineColor: '#0072bc',
   vehicle: '115-yellow',
   destination: '笠岡',
+  originName: '三石',
   trainType: '普通',
   stops: STOPS,
   segments: buildSegments(STOPS, KM, SCENES),
   fareRule: 'jr-honshu-main',
-  scopeNote: '岡山県内区間（岡山→笠岡）',
+  scopeNote: '岡山県内（三石〜笠岡）21駅・約82km',
 };

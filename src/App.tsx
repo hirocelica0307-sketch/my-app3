@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GameEngine } from './engine/game/engine';
+import { GameEngine, TIME_LIMITS, type TimeLimit } from './engine/game/engine';
 import { createKeyListener } from './engine/input/keyboard';
 import { ImeWatcher } from './engine/input/ime';
 import { createStage, fitScale, VIEW_H, VIEW_W } from './render/canvas';
 import { getLine, DEFAULT_LINE_ID } from './data/lines';
-import { bestFare, loadSave, recordScore } from './storage/save';
+import { bestFare, loadSave, recordScore, updateSettings } from './storage/save';
 import { useEngineSnapshot } from './ui/hooks/useGameEngine';
 import { PlayScreen } from './ui/screens/PlayScreen';
 import { TitleScreen } from './ui/screens/TitleScreen';
+import { ConfigScreen } from './ui/screens/ConfigScreen';
 import { CountdownScreen } from './ui/screens/CountdownScreen';
+import { PauseScreen } from './ui/screens/PauseScreen';
 import { Ticket } from './ui/components/Ticket';
 import { ImeWarning } from './ui/components/ImeWarning';
 import type { RunSummary } from './engine/game/scoring';
@@ -16,32 +18,44 @@ import type { RunSummary } from './engine/game/scoring';
 export function App() {
   const line = useMemo(() => getLine(DEFAULT_LINE_ID), []);
   const settings = useMemo(() => loadSave().settings, []);
-  const timeLimit = settings.defaultTimeLimit;
+  const [timeLimit, setTimeLimitState] = useState<TimeLimit>(settings.defaultTimeLimit);
+
+  // ハイスコアは「路線 × 秒数」で分かれているので、時間を変えたら表示も切り替える
+  const [best, setBest] = useState<number | null>(() => bestFare(line.id, settings.defaultTimeLimit));
+  const refreshBest = useCallback((t: TimeLimit) => setBest(bestFare(line.id, t)), [line.id]);
 
   const onFinish = useCallback((s: RunSummary): boolean => {
-    return recordScore(line.id, timeLimit, {
+    const isBest = recordScore(line.id, s.timeLimit as TimeLimit, {
       fare: s.fare, baseFare: s.baseFare, bonus: s.bonus,
       reachedKanji: s.reachedKanji, reachedCount: s.reachedCount, km: s.km,
       keystrokes: s.keystrokes, correct: s.correct, misses: s.misses,
       accuracy: s.accuracy, kpm: s.kpm, maxCombo: s.maxCombo, laps: s.laps,
       playedAt: Date.now(),
     }, s.elapsedSec);
-  }, [line.id, timeLimit]);
+    refreshBest(s.timeLimit as TimeLimit);
+    return isBest;
+  }, [line.id, refreshBest]);
 
   const engine = useMemo(
-    () => new GameEngine({ line, timeLimit, showRomaji: settings.showRomaji, onFinish }),
-    [line, timeLimit, settings.showRomaji, onFinish],
+    () => new GameEngine({ line, timeLimit: settings.defaultTimeLimit, showRomaji: settings.showRomaji, onFinish }),
+    [line, settings.defaultTimeLimit, settings.showRomaji, onFinish],
   );
   const snap = useEngineSnapshot(engine);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<HTMLDivElement>(null);
-  const [best, setBest] = useState<number | null>(() => bestFare(line.id, timeLimit));
   const pointerCoarse = useMemo(
     () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
     [],
   );
+
+  const chooseTime = useCallback((t: TimeLimit) => {
+    setTimeLimitState(t);
+    engine.setTimeLimit(t);
+    updateSettings({ defaultTimeLimit: t });
+    refreshBest(t);
+  }, [engine, refreshBest]);
 
   // Canvas を engine に繋ぐ
   useEffect(() => {
@@ -63,7 +77,6 @@ export function App() {
     resize();
     const ro = new ResizeObserver(resize);
     if (appRef.current !== null) ro.observe(appRef.current);
-
     return () => { ro.disconnect(); engine.detach(); };
   }, [engine]);
 
@@ -86,23 +99,62 @@ export function App() {
   // キーボード
   useEffect(() => {
     const watcher = new ImeWatcher();
+
+    const runPauseAction = () => {
+      switch (engine.pauseSelection) {
+        case 'resume': engine.setPaused(false); break;
+        case 'restart': engine.restart(); break;
+        case 'title': engine.backToTitle(); break;
+      }
+    };
+
     const listener = createKeyListener(
       {
         onChar: (key) => {
-          if (engine.currentPhase === 'result' && (key === 'r' || key === 'R')) {
-            engine.restart();
+          const phase = engine.currentPhase;
+          const k = key.toLowerCase();
+          if (phase === 'result') {
+            if (k === 'r') engine.restart();
+            return;
+          }
+          // 一時停止中はメニューのショートカットとして扱う（打鍵にはしない）
+          if (engine.isPaused) {
+            if (k === 'r') engine.restart();
+            else if (k === 't') engine.backToTitle();
             return;
           }
           engine.handleChar(key);
         },
         onCommand: (key) => {
           const phase = engine.currentPhase;
-          if (key === ' ' && phase === 'title') engine.start();
-          else if (key === 'Escape' && phase === 'result') {
-            setBest(bestFare(line.id, timeLimit));
-            window.location.reload();
-          } else if (key === 'Escape' && (phase === 'atStation' || phase === 'departing')) {
-            engine.setPaused(!snap.paused);
+
+          if (engine.isPaused && phase !== 'result') {
+            if (key === 'ArrowUp') engine.movePauseCursor(-1);
+            else if (key === 'ArrowDown') engine.movePauseCursor(1);
+            else if (key === 'Enter') runPauseAction();
+            else if (key === 'Escape') engine.setPaused(false);
+            return;
+          }
+
+          switch (phase) {
+            case 'title':
+              if (key === ' ' || key === 'Enter') engine.openConfig();
+              break;
+            case 'config': {
+              const i = TIME_LIMITS.indexOf(timeLimit);
+              if (key === 'ArrowLeft') chooseTime(TIME_LIMITS[Math.max(0, i - 1)]!);
+              else if (key === 'ArrowRight') chooseTime(TIME_LIMITS[Math.min(TIME_LIMITS.length - 1, i + 1)]!);
+              else if (key === 'Enter' || key === ' ') engine.start();
+              else if (key === 'Escape') engine.backToTitle();
+              break;
+            }
+            case 'atStation':
+            case 'departing':
+              if (key === 'Escape') engine.setPaused(true);
+              break;
+            case 'result':
+              if (key === 'Escape') engine.backToTitle();
+              break;
           }
         },
       },
@@ -110,28 +162,28 @@ export function App() {
     );
     window.addEventListener('keydown', listener);
     return () => window.removeEventListener('keydown', listener);
-  }, [engine, snap.paused, line.id, timeLimit]);
+  }, [engine, timeLimit, chooseTime]);
 
   // タブが隠れたら自動ポーズ
   useEffect(() => {
-    const onVis = () => { if (document.hidden) engine.setPaused(true); };
+    const onVis = () => {
+      if (document.hidden && (engine.currentPhase === 'atStation' || engine.currentPhase === 'departing')) {
+        engine.setPaused(true);
+      }
+    };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [engine]);
 
   const retro = settings.retroEffects;
+  const playing = snap.phase === 'atStation' || snap.phase === 'departing' || snap.phase === 'turnaround';
 
   return (
     <div className="app" ref={appRef}>
-      <div
-        ref={stageRef}
-        className={`stage${retro ? ' scanlines vignette' : ''}`}
-      >
+      <div ref={stageRef} className={`stage${retro ? ' scanlines vignette' : ''}`}>
         <canvas ref={canvasRef} />
 
-        {(snap.phase === 'atStation' || snap.phase === 'departing' || snap.phase === 'turnaround') && (
-          <PlayScreen snap={snap} />
-        )}
+        {playing && <PlayScreen snap={snap} />}
 
         {snap.phase === 'title' && (
           <TitleScreen
@@ -139,7 +191,18 @@ export function App() {
             lineName={line.nameJp}
             destination={line.destination}
             timeLimit={timeLimit}
+            scopeNote={line.scopeNote ?? ''}
             pointerCoarse={pointerCoarse}
+          />
+        )}
+
+        {snap.phase === 'config' && (
+          <ConfigScreen
+            selected={timeLimit}
+            best={best}
+            lineName={line.nameJp}
+            destination={line.destination}
+            scopeNote={line.scopeNote ?? ''}
           />
         )}
 
@@ -156,14 +219,8 @@ export function App() {
         )}
 
         {snap.imeOn && <ImeWarning />}
-
         {snap.paused && !snap.imeOn && snap.phase !== 'result' && (
-          <div className="overlay">
-            <div>
-              <div className="big">一時停止</div>
-              <div className="keyhint">[Esc] で再開</div>
-            </div>
-          </div>
+          <PauseScreen index={snap.pauseIndex} />
         )}
       </div>
     </div>

@@ -6,10 +6,22 @@ import { RunContext } from './run';
 import { RunTimer } from './timer';
 import { buildSummary, type RunSummary } from './scoring';
 import { renderScene, type SceneState, type Spark } from '../../render/scene';
+import type { LandmarkId } from '../../data/types';
 import type { RomajiDisplay } from '../typing/types';
 
 export type TimeLimit = 60 | 120 | 180;
-export type Phase = 'title' | 'countdown' | 'atStation' | 'departing' | 'turnaround' | 'result';
+export type Phase =
+  | 'title' | 'config' | 'countdown' | 'atStation' | 'departing' | 'turnaround' | 'result';
+
+/** 一時停止メニューの項目。 */
+export const PAUSE_ITEMS = [
+  { id: 'resume', label: '再開', key: 'Esc' },
+  { id: 'restart', label: '最初から', key: 'R' },
+  { id: 'title', label: 'タイトルへ戻る', key: 'T' },
+] as const;
+export type PauseItemId = (typeof PAUSE_ITEMS)[number]['id'];
+
+export const TIME_LIMITS = [60, 120, 180] as const;
 
 /** 走行アニメーションで1区間に費やす見かけの距離（論理px）。 */
 const SEGMENT_PIXELS = 240;
@@ -36,8 +48,16 @@ export interface Snapshot {
   romaji: RomajiDisplay;
   furigana: { done: number; active: number };
   showRomaji: boolean;
+  /** 駅名帯のスロット。[後方の駅, 現在の駅, 前方の駅]。 */
+  prevStationKanji: string | null;
   nextStationKanji: string | null;
+  /** 名所のキャプション。 */
+  landmarkLabels: readonly string[];
+  /** 発車で帯を1つずらすためのスライド量 0..1 と向き。 */
+  slide: number;
+  slideDir: 1 | -1;
   nextSegmentKm: number;
+  pauseIndex: number;
   fare: number;
   combo: number;
   toasts: readonly Toast[];
@@ -76,10 +96,13 @@ export class GameEngine {
   private missFlash = 0;
   private summary: RunSummary | null = null;
   private isNewRecord = false;
+  private pauseIndex = 0;
 
   private scene: SceneState = {
     distance: 0, speed: 0, scene: 'suburb', vehicle: '115-yellow',
     stoppedAt: null, direction: 1, shake: 0, sparks: [], time: 0, showSpeed: false,
+    landmarks: [], stationRomaji: '', idleTime: 0, doorOpen: 1,
+    signalGreen: false, reduceMotion: false,
   };
 
   constructor(options: EngineOptions) {
@@ -126,6 +149,37 @@ export class GameEngine {
     this.listeners.clear();
   }
 
+  /** タイトル → 制限時間の選択へ。 */
+  openConfig(): void {
+    this.phase = 'config';
+    this.phaseElapsed = 0;
+    this.emit();
+  }
+
+  setTimeLimit(timeLimit: TimeLimit): void {
+    this.options = { ...this.options, timeLimit };
+    this.emit();
+  }
+
+  backToTitle(): void {
+    this.run = new RunContext(this.options.line);
+    this.timer.reset();
+    this.paused = false;
+    this.pauseIndex = 0;
+    this.summary = null;
+    this.isNewRecord = false;
+    this.scene.speed = 0;
+    this.scene.stoppedAt = null;
+    this.scene.landmarks = [];
+    this.scene.direction = 1;
+    this.scene.showSpeed = false;
+    this.scene.sparks = [];
+    this.toasts = [];
+    this.phase = 'title';
+    this.phaseElapsed = 0;
+    this.emit();
+  }
+
   start(): void {
     this.phase = 'countdown';
     this.phaseElapsed = 0;
@@ -146,6 +200,9 @@ export class GameEngine {
     this.isNewRecord = false;
     this.phase = 'countdown';
     this.phaseElapsed = 0;
+    this.paused = false;
+    this.pauseIndex = 0;
+    this.scene.showSpeed = true;
     this.emit();
   }
 
@@ -155,6 +212,16 @@ export class GameEngine {
     if (paused) this.timer.pause();
     else if (this.phase === 'atStation' || this.phase === 'departing') this.timer.start();
     this.emit();
+  }
+
+  movePauseCursor(delta: number): void {
+    const n = PAUSE_ITEMS.length;
+    this.pauseIndex = (this.pauseIndex + delta + n) % n;
+    this.emit();
+  }
+
+  get pauseSelection(): PauseItemId {
+    return PAUSE_ITEMS[this.pauseIndex]!.id;
   }
 
   setImeOn(on: boolean): void {
@@ -172,6 +239,7 @@ export class GameEngine {
   }
 
   get currentPhase(): Phase { return this.phase; }
+  get isPaused(): boolean { return this.paused; }
 
   // ---- 入力 ----
 
@@ -206,6 +274,8 @@ export class GameEngine {
     this.phase = 'departing';
     this.phaseElapsed = 0;
     this.scene.stoppedAt = null;
+    this.scene.doorOpen = 0;
+    this.scene.signalGreen = true;
     this.scene.scene = this.run.currentSegment().scene;
   }
 
@@ -224,10 +294,15 @@ export class GameEngine {
   }
 
   private enterStation(): void {
+    const station = this.run.currentStation();
     this.phase = 'atStation';
     this.phaseElapsed = 0;
-    this.scene.stoppedAt = this.run.currentStation().kanji;
+    this.scene.stoppedAt = station.kanji;
+    this.scene.landmarks = (station.landmarks ?? []).map((l) => l.sprite) as LandmarkId[];
+    this.scene.stationRomaji = this.run.typing.suffixHint[0] ?? '';
     this.scene.scene = this.run.currentSegment().scene;
+    this.scene.doorOpen = 1;      // 停車でドアが開く
+    this.scene.signalGreen = false; // 出発信号は赤に戻る
     if (!this.paused && !this.imeOn) this.timer.start();
   }
 
@@ -260,6 +335,8 @@ export class GameEngine {
   }
 
   private update(dt: number): void {
+    // 列車が止まっていても進む時間。雲・乗客・信号はこれで動かす。
+    this.scene.idleTime += dt;
     this.scene.time += dt;
     this.phaseElapsed += dt;
     if (this.scene.shake > 0) this.scene.shake = Math.max(0, this.scene.shake - dt);
@@ -274,7 +351,8 @@ export class GameEngine {
 
     switch (this.phase) {
       case 'title':
-        // タイトルでも景色を流しておく（静止画に見せない）
+      case 'config':
+        // タイトル・設定中も景色を流しておく（静止画に見せない）
         this.scene.speed = 34;
         this.scene.distance += 34 * dt;
         break;
@@ -342,9 +420,17 @@ export class GameEngine {
   }
 
   private buildSnapshot(): Snapshot {
+    const line = this.options.line;
     const station = this.run.currentStation();
-    const nextIndex = this.run.stopIndex + this.run.direction;
-    const nextId = this.options.line.stops[nextIndex];
+    const dir = this.run.direction;
+    const prevId = line.stops[this.run.stopIndex - dir];
+    const nextId = line.stops[this.run.stopIndex + dir];
+
+    // 発車したら帯を1つ分ずらす。走行の進捗をそのままスライド量にする。
+    const slide = this.phase === 'departing'
+      ? Math.min(this.phaseElapsed / this.travelSec, 1)
+      : 0;
+
     return {
       phase: this.phase,
       paused: this.paused,
@@ -352,18 +438,23 @@ export class GameEngine {
       countdown: Math.max(0, Math.ceil(COUNTDOWN_SEC - this.phaseElapsed)),
       remainSec: this.remaining(),
       timeLimit: this.options.timeLimit,
-      lineName: this.options.line.nameJp,
-      trainType: this.options.line.trainType,
-      destination: this.options.line.destination,
-      lineColor: this.options.line.lineColor,
+      lineName: line.nameJp,
+      trainType: line.trainType,
+      destination: dir === 1 ? line.destination : line.originName,
+      lineColor: line.lineColor,
       stationKanji: station.kanji,
       stationKana: station.kana,
       stationNote: station.note ?? null,
       romaji: renderRomaji(this.run.typing),
       furigana: furiganaSplit(this.run.typing),
       showRomaji: this.options.showRomaji,
+      prevStationKanji: prevId === undefined ? null : getStation(prevId).kanji,
       nextStationKanji: nextId === undefined ? null : getStation(nextId).kanji,
+      landmarkLabels: (station.landmarks ?? []).map((l) => l.label),
+      slide,
+      slideDir: dir,
       nextSegmentKm: this.run.currentSegment().km,
+      pauseIndex: this.pauseIndex,
       fare: this.run.fare,
       combo: this.run.combo,
       toasts: this.toasts,

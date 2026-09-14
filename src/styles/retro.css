@@ -44,56 +44,141 @@
 .hud-label { color: var(--ink-dim); }
 .combo { color: #7de0a0; }
 
-/* 駅名の3段表示。HUD の上に重ねる中央パネル。 */
-.station {
+/* ===== 方向幕：いまどの路線に乗っているか ===== */
+.rollsign {
+  display: flex;
+  flex-direction: column;
+  min-width: 9em;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: var(--sign-color, #0072bc);
+  color: #fff;
+  line-height: 1.15;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35);
+}
+.rollsign-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  padding: 0.18em 0.5em 0;
+}
+.rollsign-type {
+  font-size: 0.85em;
+  background: rgba(0,0,0,0.3);
+  padding: 0 0.35em;
+  letter-spacing: 0.1em;
+}
+.rollsign-dest {
+  font-size: 1.5em;
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+}
+.rollsign-line {
+  font-size: 0.82em;
+  letter-spacing: 0.16em;
+  padding: 0 0.5em 0.18em;
+  color: rgba(255,255,255,0.85);
+}
+
+/* ===== 線路沿いの駅名帯 ===== */
+.railstrip {
   position: absolute;
   left: 0; right: 0;
-  bottom: 4.5%;
+  bottom: 0;
+  height: 32%;
+  overflow: hidden;
+  /* 真っ黒にすると線路の質感が消えるので、下は透かして砂利を見せる */
+  background: linear-gradient(180deg,
+    rgba(8,10,14,0.0),
+    rgba(8,10,14,0.62) 18%,
+    rgba(8,10,14,0.80) 55%,
+    rgba(8,10,14,0.66));
+}
+.railstrip-track {
+  position: absolute;
+  left: 0; right: 0; top: 2px;
+  height: 1px;
+  background: rgba(255,255,255,0.18);
+}
+.railstrip-slots {
+  position: absolute;
+  inset: 0;
+  /* 発車中はエンジンの走行進捗をそのまま translateX に流す */
+  will-change: transform;
+}
+.slot {
+  position: absolute;
+  top: 8%;
   text-align: center;
-  padding: 0.6em 1em;
-  background: linear-gradient(180deg, rgba(8,10,14,0.55), rgba(8,10,14,0.9));
-  pointer-events: none;
+  transform: translateX(-50%);
 }
-.station.flash { background: rgba(120, 20, 20, 0.75); }
+.slot-prev { left: 14%; }
+.slot-now  { left: 50%; }
+.slot-next { left: 86%; }
 
-/* 折り返し中は入力を受け付けない。打っても無反応、を避けるため明示する。 */
-.station.turnaround { background: rgba(20, 40, 70, 0.92); }
-.station.turnaround .station-kanji { color: var(--accent); letter-spacing: 0.3em; }
-.station.turnaround .station-kana { color: var(--ink); letter-spacing: 0.1em; }
+.pin {
+  display: block;
+  width: 0.5em; height: 0.5em;
+  margin: 0 auto 0.25em;
+  background: var(--ink-dim);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #000;
+}
+.pin-now { background: var(--accent); width: 0.7em; height: 0.7em; }
 
-.station-kanji {
-  font-size: calc(var(--scale) * 9px);
-  letter-spacing: 0.22em;
+.slot-side { color: #aab6c4; }
+.slot-side .slot-name {
+  display: block;
+  font-size: calc(var(--scale) * 5px);
+  letter-spacing: 0.14em;
+  text-shadow: 0 1px 0 #000;
+}
+.slot-side .slot-tag {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: calc(var(--scale) * 2.8px);
+  color: #78838f;
+  margin-top: 0.2em;
+}
+.slot-prev { opacity: 0.72; }
+
+.slot-now { min-width: 46%; }
+.slot-now.flash { background: rgba(140, 24, 24, 0.55); }
+.now-kanji {
+  font-size: calc(var(--scale) * 10px);
+  letter-spacing: 0.2em;
+  line-height: 1.05;
   text-shadow: 0 calc(var(--scale) * 0.6px) 0 #000;
-  line-height: 1.1;
 }
-.station-kanji.arrived { color: var(--typed); }
-
-.station-kana {
+.now-kana {
   font-size: calc(var(--scale) * 4px);
   letter-spacing: 0.2em;
-  margin-top: 0.2em;
   color: var(--pending);
+  margin-top: 0.1em;
 }
-.station-kana .k-done { color: var(--typed); }
-.station-kana .k-active { color: var(--accent); }
-
-.station-romaji {
+.now-kana .k-done { color: var(--typed); }
+.now-kana .k-active { color: var(--accent); }
+.now-romaji {
   font-family: var(--font-mono);
-  font-size: calc(var(--scale) * 4.4px);
+  font-size: calc(var(--scale) * 5px);
   letter-spacing: 0.14em;
-  margin-top: 0.35em;
+  margin-top: 0.2em;
   white-space: nowrap;
-  overflow: hidden;
 }
-.station-romaji .r-done { color: var(--typed); }
-.station-romaji .r-rest { color: var(--ink); }
-.station-romaji .r-next { color: var(--pending); }
-.station-romaji .caret {
+.now-romaji .r-done { color: var(--typed); }
+.now-romaji .r-rest { color: var(--ink); }
+.now-romaji .r-next { color: var(--pending); }
+.now-romaji .caret {
   display: inline-block;
-  width: 0.1em;
+  width: 0.14em;
   background: var(--accent);
   animation: blink 0.9s steps(2, start) infinite;
+}
+.now-landmark {
+  font-size: calc(var(--scale) * 3.2px);
+  letter-spacing: 0.1em;
+  color: #9fd6a8;
+  margin-top: 0.25em;
 }
 @keyframes blink { 0%, 50% { opacity: 1 } 50.01%, 100% { opacity: 0 } }
 
@@ -164,4 +249,90 @@
   background: rgba(30, 10, 10, 0.9);
   font-size: calc(var(--scale) * 3.6px);
   line-height: 1.9;
+}
+
+/* ===== 一時停止メニュー ===== */
+/* 景色の上に文字を直接置くと読めないので、パネルを敷く。 */
+.panel, .pause-panel {
+  background: rgba(12, 15, 21, 0.94);
+  border: 2px solid var(--line);
+  box-shadow: 0 0 0 1px #000, 0 calc(var(--scale) * 2px) 0 rgba(0,0,0,0.5);
+  padding: 1.1em 1.8em 0.9em;
+}
+.pause-title {
+  font-size: calc(var(--scale) * 5px);
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  margin-bottom: 0.9em;
+}
+.menu { list-style: none; margin: 0; padding: 0; display: inline-block; text-align: left; }
+.menu-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  font-size: calc(var(--scale) * 4px);
+  padding: 0.22em 0.6em;
+  color: var(--pending);
+}
+.menu-item.selected { color: var(--ink); background: rgba(242, 194, 48, 0.14); }
+.menu-cursor { width: 1em; color: var(--accent); }
+.menu-label { min-width: 7em; letter-spacing: 0.12em; }
+.menu-key { font-family: var(--font-mono); font-size: 0.8em; color: #5d6773; }
+.menu-item.selected .menu-key { color: var(--accent); }
+
+/* ===== 制限時間の選択（券売機風） ===== */
+.config-head {
+  font-size: calc(var(--scale) * 4px);
+  letter-spacing: 0.24em;
+  color: var(--accent);
+}
+.config-route {
+  font-size: calc(var(--scale) * 5.5px);
+  letter-spacing: 0.18em;
+  margin-top: 0.4em;
+}
+.config-scope {
+  font-size: calc(var(--scale) * 2.8px);
+  color: var(--ink-dim);
+  margin-top: 0.2em;
+}
+.fare-buttons { display: flex; gap: 0.8em; justify-content: center; margin: 1.1em 0 0.7em; }
+.fare-button {
+  width: 4.4em;
+  padding: 0.5em 0;
+  background: linear-gradient(180deg, #2b3340, #1b212b);
+  border: 2px solid #48525f;
+  border-radius: 2px;
+  color: var(--pending);
+  box-shadow: 0 calc(var(--scale) * 0.7px) 0 #0a0d12;
+}
+.fare-button.selected {
+  background: linear-gradient(180deg, #f2c230, #d3a01c);
+  border-color: #fff0b8;
+  color: #1a1509;
+}
+.fare-button-sec { font-family: var(--font-mono); font-size: calc(var(--scale) * 6px); font-weight: 700; line-height: 1; }
+.fare-button-unit { font-size: calc(var(--scale) * 2.8px); margin-top: 0.2em; }
+.config-best { font-size: calc(var(--scale) * 3.2px); color: var(--ink-dim); }
+
+/* 折り返し中は入力を受け付けないので、駅名帯を出さず明示的に知らせる。 */
+.turnaround-banner {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 30%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  background: rgba(20, 40, 70, 0.92);
+}
+.turnaround-title {
+  font-size: calc(var(--scale) * 6px);
+  letter-spacing: 0.3em;
+  color: var(--accent);
+}
+.turnaround-sub {
+  font-size: calc(var(--scale) * 3.2px);
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  margin-top: 0.5em;
 }

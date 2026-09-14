@@ -3,10 +3,11 @@ interface Props {
   lineName: string;
   destination: string;
   timeLimit: number;
+  scopeNote: string;
   pointerCoarse: boolean;
 }
 
-export function TitleScreen({ best, lineName, destination, timeLimit, pointerCoarse }: Props) {
+export function TitleScreen({ best, lineName, destination, timeLimit, scopeNote, pointerCoarse }: Props) {
   return (
     <div className="overlay soft">
       <div>
@@ -14,8 +15,8 @@ export function TitleScreen({ best, lineName, destination, timeLimit, pointerCoa
         <div className="title-sub">OKAYAMA RAIL TYPING</div>
 
         <div className="title-meta">
-          本日の路線　{lineName}　{destination}行（{timeLimit}秒）<br />
-          最高運賃　{best === null ? '記録なし' : `¥${best.toLocaleString('ja-JP')}`}
+          {lineName}　{destination}ゆき　{scopeNote}<br />
+          {timeLimit}秒の最高運賃　{best === null ? '記録なし' : `¥${best.toLocaleString('ja-JP')}`}
         </div>
 
         <div className="title-press">▶ PRESS SPACE</div>
@@ -23,9 +24,7 @@ export function TitleScreen({ best, lineName, destination, timeLimit, pointerCoa
         <div className="keyhint">
           駅名をローマ字で入力します。日本語入力は<b>OFF</b>にしてください。
         </div>
-        {pointerCoarse && (
-          <div className="keyhint warn">※本作はPCキーボード専用です</div>
-        )}
+        {pointerCoarse && <div className="keyhint warn">※本作はPCキーボード専用です</div>}
       </div>
     </div>
   );
