@@ -79,7 +79,7 @@ export class GameEngine {
 
   private scene: SceneState = {
     distance: 0, speed: 0, scene: 'suburb', vehicle: '115-yellow',
-    stoppedAt: null, direction: 1, shake: 0, sparks: [], time: 0,
+    stoppedAt: null, direction: 1, shake: 0, sparks: [], time: 0, showSpeed: false,
   };
 
   constructor(options: EngineOptions) {
@@ -129,6 +129,7 @@ export class GameEngine {
   start(): void {
     this.phase = 'countdown';
     this.phaseElapsed = 0;
+    this.scene.showSpeed = true;
     this.emit();
   }
 
@@ -272,6 +273,11 @@ export class GameEngine {
     }
 
     switch (this.phase) {
+      case 'title':
+        // タイトルでも景色を流しておく（静止画に見せない）
+        this.scene.speed = 34;
+        this.scene.distance += 34 * dt;
+        break;
       case 'countdown':
         if (this.phaseElapsed >= COUNTDOWN_SEC) this.enterStation();
         break;

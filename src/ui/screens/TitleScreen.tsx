@@ -8,7 +8,7 @@ interface Props {
 
 export function TitleScreen({ best, lineName, destination, timeLimit, pointerCoarse }: Props) {
   return (
-    <div className="overlay">
+    <div className="overlay soft">
       <div>
         <div className="title-logo">岡山鉄道タイピング</div>
         <div className="title-sub">OKAYAMA RAIL TYPING</div>

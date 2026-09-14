@@ -28,6 +28,8 @@ export interface SceneState {
   sparks: readonly Spark[];
   /** 経過時間（秒）。揺れの位相に使う。 */
   time: number;
+  /** 速度計を出すか。タイトルでは隠す。 */
+  showSpeed: boolean;
 }
 
 export interface Spark {
@@ -201,7 +203,7 @@ export function renderScene(ctx: CanvasRenderingContext2D, s: SceneState): void 
   drawPlatform(ctx, s.stoppedAt);
   drawTrain(ctx, s);
   drawSparks(ctx, s.sparks);
-  if (s.speed > 0) drawSpeedo(ctx, s.speed);
+  if (s.speed > 0 && s.stoppedAt === null && s.showSpeed) drawSpeedo(ctx, s.speed);
 
   ctx.restore();
 }
