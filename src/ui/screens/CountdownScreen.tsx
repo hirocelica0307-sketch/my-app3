@@ -6,7 +6,7 @@ export function CountdownScreen({ count, lineName, destination }: Props) {
       <div className="panel">
         <div className="title-sub">{lineName}　{destination}行</div>
         <div className="big">{count === 0 ? '発車！' : count}</div>
-        <div className="keyhint">日本語入力が OFF になっているか確認してください</div>
+        <div className="keyhint">日本語入力（IME）が OFF か たしかめてください</div>
       </div>
     </div>
   );

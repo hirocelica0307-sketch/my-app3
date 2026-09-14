@@ -1,13 +1,15 @@
+import { Furigana } from '../components/Furigana';
+
 interface Props {
   best: number | null;
   lineName: string;
+  lineKana: string;
   destination: string;
   timeLimit: number;
-  scopeNote: string;
   pointerCoarse: boolean;
 }
 
-export function TitleScreen({ best, lineName, destination, timeLimit, scopeNote, pointerCoarse }: Props) {
+export function TitleScreen({ best, lineName, lineKana, destination, timeLimit, pointerCoarse }: Props) {
   return (
     <div className="overlay soft">
       <div>
@@ -15,16 +17,18 @@ export function TitleScreen({ best, lineName, destination, timeLimit, scopeNote,
         <div className="title-sub">OKAYAMA RAIL TYPING</div>
 
         <div className="title-meta">
-          {lineName}　{destination}ゆき　{scopeNote}<br />
-          {timeLimit}秒の最高運賃　{best === null ? '記録なし' : `¥${best.toLocaleString('ja-JP')}`}
+          <Furigana kana={lineKana}>{lineName}</Furigana>　{destination}ゆき<br />
+          {timeLimit}びょうの さいこううんちん　
+          {best === null ? 'きろくなし' : `¥${best.toLocaleString('ja-JP')}`}
         </div>
 
         <div className="title-press">▶ PRESS SPACE</div>
 
         <div className="keyhint">
-          駅名をローマ字で入力します。日本語入力は<b>OFF</b>にしてください。
+          えきめいを ローマ字で うちます。日本語入力は<b>OFF</b>にしてください。
         </div>
-        {pointerCoarse && <div className="keyhint warn">※本作はPCキーボード専用です</div>}
+        <div className="keyhint">M キーで 音を けせます</div>
+        {pointerCoarse && <div className="keyhint warn">※パソコンのキーボードでんよう です</div>}
       </div>
     </div>
   );

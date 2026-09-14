@@ -10,7 +10,7 @@ export function PauseScreen({ index }: Props) {
   return (
     <div className="overlay">
       <div className="pause-panel">
-        <div className="pause-title">■ 一時停止 ■</div>
+        <div className="pause-title">■ いちじ ていし ■</div>
         <ul className="menu">
           {PAUSE_ITEMS.map((item, i) => (
             <li key={item.id} className={i === index ? 'menu-item selected' : 'menu-item'}>
@@ -20,7 +20,7 @@ export function PauseScreen({ index }: Props) {
             </li>
           ))}
         </ul>
-        <div className="keyhint">↑↓ で選んで Enter、またはカッコ内のキーを直接押す</div>
+        <div className="keyhint">↑↓ で えらんで Enter、または [ ] の キーを おす</div>
       </div>
     </div>
   );

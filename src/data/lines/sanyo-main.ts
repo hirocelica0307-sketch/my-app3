@@ -1,18 +1,5 @@
 import type { Line, SceneKind, StationId } from '../types';
-
-/** 駅列と起点からの累計キロから segments を組み立てる。 */
-function buildSegments(
-  stops: readonly StationId[],
-  kmFromOrigin: readonly number[],
-  scenes: readonly SceneKind[],
-) {
-  return stops.slice(1).map((to, i) => ({
-    from: stops[i]!,
-    to,
-    km: Number((kmFromOrigin[i + 1]! - kmFromOrigin[i]!).toFixed(1)),
-    scene: scenes[i]!,
-  }));
-}
+import { buildSegments } from './shared';
 
 /** 岡山県内を東端から西端まで。岡山駅は途中駅になる。 */
 const STOPS: readonly StationId[] = [
