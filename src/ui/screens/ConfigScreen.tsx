@@ -14,7 +14,7 @@ export function ConfigScreen({ selected, best, lineName, destination, scopeNote 
   return (
     <div className="overlay">
       <div className="panel">
-        <div className="config-head">きっぷ を お求めください</div>
+        <div className="config-head">きっぷ を おもとめください</div>
         <div className="config-route">{lineName}　{destination}ゆき</div>
         <div className="config-scope">{scopeNote}</div>
 
@@ -28,9 +28,10 @@ export function ConfigScreen({ selected, best, lineName, destination, scopeNote 
         </div>
 
         <div className="config-best">
-          この時間の最高運賃　{best === null ? '記録なし' : `¥${best.toLocaleString('ja-JP')}`}
+          この じかんの さいこう うんちん　
+          {best === null ? 'きろくなし' : `¥${best.toLocaleString('ja-JP')}`}
         </div>
-        <div className="keyhint">← → で選んで Enter で発車　[Esc] タイトルへ</div>
+        <div className="keyhint">← → で えらんで Enter で はっしゃ　[Esc] もどる</div>
       </div>
     </div>
   );

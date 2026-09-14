@@ -10,7 +10,8 @@ interface Props { snap: Snapshot }
  *     (通過)          なかしょう           (次)
  *                     nakashou
  *
- * 中央＝いま打っている駅、左＝通過した駅、右＝次の駅。
+ * 中央＝いま打っている駅、進行方向の側＝次の駅、その反対＝通過した駅。
+ * 折り返して左へ進むときは左右が入れ替わる（.reversed）。
  * 発車すると帯全体が1スロット分スライドして、次の駅が中央に来る。
  * これで「1駅進んだ」が必ず目に見える。
  */
@@ -36,7 +37,7 @@ export function RailStrip({ snap }: Props) {
   const shift = -snap.slide * snap.slideDir * 36;
 
   return (
-    <div className="railstrip">
+    <div className={`railstrip${snap.slideDir === -1 ? ' reversed' : ''}`}>
       <div className="railstrip-track" />
       <div className="railstrip-slots" style={{ transform: `translateX(${shift}%)` }}>
         <div className="slot slot-side slot-prev">

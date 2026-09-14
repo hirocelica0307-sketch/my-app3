@@ -116,6 +116,13 @@
 .slot-now  { left: 50%; }
 .slot-next { left: 86%; }
 
+/*
+ * 折り返して左へ進むときは、次の駅が左から来る。
+ * スロットの左右を入れ替えないと「進んでいるのに看板が逆から来る」ことになる。
+ */
+.railstrip.reversed .slot-prev { left: 86%; }
+.railstrip.reversed .slot-next { left: 14%; }
+
 .pin {
   display: block;
   width: 0.5em; height: 0.5em;
@@ -335,4 +342,95 @@
   letter-spacing: 0.1em;
   color: var(--ink);
   margin-top: 0.5em;
+}
+
+/* ===== ふりがな ===== */
+/*
+ * ピクセル調のフォントでも崩れないよう、ルビの大きさと行間を明示する。
+ * ruby は行の高さを押し上げるので、親側に余裕を持たせておく。
+ */
+ruby.fg {
+  ruby-position: over;
+  -webkit-ruby-position: before;
+}
+ruby.fg > rt {
+  font-size: 0.5em;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+  line-height: 1.1;
+  text-align: center;
+  user-select: none;
+}
+.selected ruby.fg > rt { color: var(--accent); }
+
+/* ===== 路線選択（発車標） ===== */
+.board-panel { min-width: 74%; }
+.board-head {
+  font-size: calc(var(--scale) * 4.2px);
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  margin-bottom: 0.9em;
+  line-height: 2.2;
+}
+.board { list-style: none; margin: 0; padding: 0; }
+.board-row {
+  display: grid;
+  grid-template-columns: 1.2em 3.4em 1fr 1fr 6em 4.6em;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.3em 0.5em;
+  font-size: calc(var(--scale) * 3.8px);
+  line-height: 2.3;
+  color: var(--pending);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.board-row.selected {
+  color: var(--ink);
+  background: rgba(242, 194, 48, 0.16);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.board-cursor { color: var(--accent); }
+.board-type {
+  font-size: 0.8em;
+  background: rgba(255,255,255,0.1);
+  padding: 0 0.3em;
+  text-align: center;
+}
+.board-name, .board-dest { letter-spacing: 0.08em; }
+.board-stars { font-size: 0.8em; color: var(--accent); letter-spacing: 0.04em; }
+.board-best {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  text-align: right;
+  color: var(--ink-dim);
+}
+.board-row.selected .board-best { color: var(--accent); }
+
+.board-detail {
+  display: flex;
+  gap: 1.2em;
+  align-items: baseline;
+  margin-top: 0.8em;
+  font-size: calc(var(--scale) * 3.2px);
+  line-height: 2.2;
+  color: var(--ink-dim);
+}
+.board-detail-word { color: var(--accent); letter-spacing: 0.12em; }
+.board-nickname {
+  font-size: calc(var(--scale) * 3px);
+  color: #7fb98a;
+  margin-top: 0.2em;
+}
+
+/* ミュート中の表示。音が出ない理由が分からないと混乱するので必ず出す。 */
+.mute-badge {
+  position: absolute;
+  right: 0.6em;
+  bottom: 0.6em;
+  font-size: calc(var(--scale) * 3px);
+  background: rgba(10, 12, 16, 0.85);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  padding: 0.2em 0.6em;
+  pointer-events: none;
 }

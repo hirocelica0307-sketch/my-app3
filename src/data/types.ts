@@ -16,7 +16,9 @@ export type LandmarkId =
   | 'castle' | 'peach' | 'kura' | 'denim' | 'dome' | 'campus'
   | 'torii' | 'wisteria' | 'brickkiln' | 'brewery' | 'thatched'
   | 'ruins' | 'somen' | 'ramen' | 'horseshoecrab' | 'shinkansen'
-  | 'shrinehall' | 'atom' | 'junction' | 'gate';
+  | 'shrinehall' | 'atom' | 'junction' | 'gate'
+  | 'pagoda' | 'turtle' | 'tatami' | 'ferry'
+  | 'setoohashi' | 'cave' | 'udon' | 'onsen';
 
 export interface Landmark {
   readonly sprite: LandmarkId;

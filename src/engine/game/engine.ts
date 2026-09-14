@@ -7,17 +7,24 @@ import { RunTimer } from './timer';
 import { buildSummary, type RunSummary } from './scoring';
 import { renderScene, type SceneState, type Spark } from '../../render/scene';
 import type { LandmarkId } from '../../data/types';
+import {
+  sfxArrive, sfxBrake, sfxCombo, sfxDepartureBell, sfxDepartureMelody,
+  sfxFanfare, sfxKey, sfxMiss, sfxNodeDone,
+} from '../../audio/sfx';
+import { playBgm, stopBgm } from '../../audio/music';
 import type { RomajiDisplay } from '../typing/types';
 
 export type TimeLimit = 60 | 120 | 180;
 export type Phase =
-  | 'title' | 'config' | 'countdown' | 'atStation' | 'departing' | 'turnaround' | 'result';
+  | 'title' | 'lineSelect' | 'config' | 'countdown'
+  | 'atStation' | 'departing' | 'turnaround' | 'result';
 
 /** 一時停止メニューの項目。 */
 export const PAUSE_ITEMS = [
-  { id: 'resume', label: '再開', key: 'Esc' },
-  { id: 'restart', label: '最初から', key: 'R' },
-  { id: 'title', label: 'タイトルへ戻る', key: 'T' },
+  { id: 'resume', label: 'つづける', key: 'Esc' },
+  { id: 'restart', label: 'さいしょから', key: 'R' },
+  { id: 'mute', label: 'おとの ON / OFF', key: 'M' },
+  { id: 'title', label: 'タイトルへ もどる', key: 'T' },
 ] as const;
 export type PauseItemId = (typeof PAUSE_ITEMS)[number]['id'];
 
@@ -37,7 +44,9 @@ export interface Snapshot {
   countdown: number;
   remainSec: number;
   timeLimit: TimeLimit;
+  lineId: string;
   lineName: string;
+  lineIndex: number;
   trainType: string;
   destination: string;
   lineColor: string;
@@ -97,6 +106,8 @@ export class GameEngine {
   private summary: RunSummary | null = null;
   private isNewRecord = false;
   private pauseIndex = 0;
+  private lineIndex = 0;
+  private bellRung = false;
 
   private scene: SceneState = {
     distance: 0, speed: 0, scene: 'suburb', vehicle: '115-yellow',
@@ -149,6 +160,34 @@ export class GameEngine {
     this.listeners.clear();
   }
 
+  /** タイトル → 路線を選ぶ。 */
+  openLineSelect(): void {
+    this.phase = 'lineSelect';
+    this.phaseElapsed = 0;
+    this.emit();
+  }
+
+  moveLineCursor(delta: number, total: number): void {
+    this.lineIndex = (this.lineIndex + delta + total) % total;
+    this.emit();
+  }
+
+  get lineCursor(): number {
+    return this.lineIndex;
+  }
+
+  /** 選んだ路線に差し替える。RunContext を作り直す。 */
+  setLine(line: Line, index: number): void {
+    this.options = { ...this.options, line };
+    this.lineIndex = index;
+    this.run = new RunContext(line);
+    this.scene.vehicle = line.vehicle;
+    this.scene.scene = this.run.currentSegment().scene;
+    this.scene.direction = 1;
+    this.scene.distance = 0;
+    this.emit();
+  }
+
   /** タイトル → 制限時間の選択へ。 */
   openConfig(): void {
     this.phase = 'config';
@@ -177,13 +216,16 @@ export class GameEngine {
     this.toasts = [];
     this.phase = 'title';
     this.phaseElapsed = 0;
+    playBgm('__title');
     this.emit();
   }
 
   start(): void {
     this.phase = 'countdown';
     this.phaseElapsed = 0;
+    this.bellRung = false;
     this.scene.showSpeed = true;
+    playBgm(this.options.line.id);
     this.emit();
   }
 
@@ -202,7 +244,9 @@ export class GameEngine {
     this.phaseElapsed = 0;
     this.paused = false;
     this.pauseIndex = 0;
+    this.bellRung = false;
     this.scene.showSpeed = true;
+    playBgm(this.options.line.id);
     this.emit();
   }
 
@@ -240,6 +284,8 @@ export class GameEngine {
 
   get currentPhase(): Phase { return this.phase; }
   get isPaused(): boolean { return this.paused; }
+  get currentLineId(): string { return this.options.line.id; }
+  get currentTimeLimit(): TimeLimit { return this.options.timeLimit; }
 
   // ---- 入力 ----
 
@@ -250,6 +296,8 @@ export class GameEngine {
 
     if (result.type === 'miss') {
       this.run.recordMiss();
+      sfxMiss();
+      sfxBrake();
       this.missFlash = 0.12;
       this.scene.shake = 0.16;
       const cost = this.run.lastBrakeCost();
@@ -261,6 +309,7 @@ export class GameEngine {
 
     this.run.recordHit();
     this.run.typing = result.state;
+    if (result.nodeCompleted) sfxNodeDone(); else sfxKey();
     if (result.finished) this.departStation();
     this.emit();
   }
@@ -268,7 +317,10 @@ export class GameEngine {
   // ---- 進行 ----
 
   private departStation(): void {
+    const comboBefore = this.run.combo;
     this.run.completeStation();
+    sfxDepartureMelody();
+    if (this.run.combo > comboBefore && this.run.combo > 1) sfxCombo(this.run.combo);
     this.travelSec = this.run.travelSeconds();
     this.segmentStartDistance = this.scene.distance;
     this.phase = 'departing';
@@ -287,6 +339,7 @@ export class GameEngine {
       this.phase = 'turnaround';
       this.phaseElapsed = 0;
       this.timer.pause();
+      sfxArrive();
       this.pushToast('終点 — 折り返します');
       return;
     }
@@ -329,6 +382,8 @@ export class GameEngine {
       laps: this.run.laps,
     });
     this.isNewRecord = this.options.onFinish?.(this.summary) ?? false;
+    stopBgm();
+    sfxFanfare();
     this.phase = 'result';
     this.scene.speed = 0;
     this.emit();
@@ -351,12 +406,17 @@ export class GameEngine {
 
     switch (this.phase) {
       case 'title':
+      case 'lineSelect':
       case 'config':
         // タイトル・設定中も景色を流しておく（静止画に見せない）
         this.scene.speed = 34;
         this.scene.distance += 34 * dt;
         break;
       case 'countdown':
+        if (!this.bellRung && this.phaseElapsed >= COUNTDOWN_SEC - 1.1) {
+          this.bellRung = true;
+          sfxDepartureBell();
+        }
         if (this.phaseElapsed >= COUNTDOWN_SEC) this.enterStation();
         break;
       case 'turnaround':
@@ -364,7 +424,10 @@ export class GameEngine {
         break;
       case 'departing': {
         const t = Math.min(this.phaseElapsed / this.travelSec, 1);
-        this.scene.distance = this.segmentStartDistance + SEGMENT_PIXELS * t;
+        // 折り返すと距離が減る向きに動く。
+        // これで背景・枕木・架線柱のスクロールも車輪の回転も自動的に逆になる
+        // （scene.ts は mod() を使っており、負の値も正しく折り返す）。
+        this.scene.distance = this.segmentStartDistance + SEGMENT_PIXELS * t * this.run.direction;
         this.scene.speed = SEGMENT_PIXELS / this.travelSec;
         if (t >= 1) this.arriveStation();
         break;
@@ -438,7 +501,9 @@ export class GameEngine {
       countdown: Math.max(0, Math.ceil(COUNTDOWN_SEC - this.phaseElapsed)),
       remainSec: this.remaining(),
       timeLimit: this.options.timeLimit,
+      lineId: line.id,
       lineName: line.nameJp,
+      lineIndex: this.lineIndex,
       trainType: line.trainType,
       destination: dir === 1 ? line.destination : line.originName,
       lineColor: line.lineColor,

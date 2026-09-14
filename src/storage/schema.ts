@@ -22,6 +22,11 @@ export interface Settings {
   showRomaji: boolean;
   defaultTimeLimit: TimeLimit;
   retroEffects: boolean;
+  /** 効果音の音量 0..1。 */
+  seVolume: number;
+  /** BGM の音量 0..1。 */
+  bgmVolume: number;
+  muted: boolean;
 }
 
 export interface GlobalStats {
@@ -44,7 +49,10 @@ export const DEFAULT_SAVE: SaveDataV1 = {
   version: 1,
   playCount: 0,
   highScores: {},
-  settings: { showRomaji: true, defaultTimeLimit: 60, retroEffects: true },
+  settings: {
+    showRomaji: true, defaultTimeLimit: 60, retroEffects: true,
+    seVolume: 0.5, bgmVolume: 0.28, muted: false,
+  },
   stats: { totalRuns: 0, totalKeystrokes: 0, totalMisses: 0, totalSeconds: 0, missByKana: {} },
 };
 
