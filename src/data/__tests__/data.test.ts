@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ALL_STATIONS, STATIONS } from '../stations';
 import { LINES } from '../lines';
 import { getFareRule } from '../fareTable';
+import { LANDMARKS } from '../../render/sprites/landmarks';
 
 describe('駅レジストリ', () => {
   it('読みがひらがなと長音符だけで構成されている', () => {
@@ -54,5 +55,47 @@ describe('路線', () => {
     for (const line of LINES) {
       expect(() => getFareRule(line.fareRule)).not.toThrow();
     }
+  });
+});
+
+describe('名所・特産', () => {
+  it('参照しているスプライトが実在する', () => {
+    for (const s of ALL_STATIONS) {
+      for (const lm of s.landmarks ?? []) {
+        expect(LANDMARKS[lm.sprite], `${s.kanji}: ${lm.sprite}`).toBeDefined();
+      }
+    }
+  });
+  it('ラベルが空でない', () => {
+    for (const s of ALL_STATIONS) {
+      for (const lm of s.landmarks ?? []) {
+        expect(lm.label.length, `${s.kanji}`).toBeGreaterThan(0);
+      }
+    }
+  });
+  it('1駅あたり2件まで（画面に収まる範囲）', () => {
+    for (const s of ALL_STATIONS) {
+      expect((s.landmarks ?? []).length, `${s.kanji}`).toBeLessThanOrEqual(2);
+    }
+  });
+});
+
+describe('山陽本線の長さ', () => {
+  it('岡山県の端から端まで21駅ある', () => {
+    const line = LINES.find((l) => l.id === 'sanyo-main-down')!;
+    expect(line.stops).toHaveLength(21);
+    expect(line.stops[0]).toBe('mitsuishi');
+    expect(line.stops.at(-1)).toBe('kasaoka');
+  });
+  it('岡山駅は途中駅として含まれる', () => {
+    const line = LINES.find((l) => l.id === 'sanyo-main-down')!;
+    const i = line.stops.indexOf('okayama');
+    expect(i).toBeGreaterThan(0);
+    expect(i).toBeLessThan(line.stops.length - 1);
+  });
+  it('全長が60km以上ある（すぐ折り返さない長さ）', () => {
+    const line = LINES.find((l) => l.id === 'sanyo-main-down')!;
+    const total = line.segments.reduce((a, s) => a + s.km, 0);
+    expect(total).toBeGreaterThan(60);
   });
 });

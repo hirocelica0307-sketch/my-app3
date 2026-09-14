@@ -143,3 +143,82 @@ export const STATION_SIGN: ShapeDef = assertShape('STATION_SIGN', {
     "..........MM..........",
   ],
 });
+
+/** 雲（大）。W=雲 */
+export const CLOUD_A: ShapeDef = assertShape('CLOUD_A', {
+  w: 26,
+  h: 6,
+  rows: [
+    "...........WWWWWW.........",
+    ".......WWWWWWWWWWWWW......",
+    "....WWWWWWWWWWWWWWWWWWW...",
+    "..WWWWWWWWWWWWWWWWWWWWWWW.",
+    ".WWWWWWWWWWWWWWWWWWWWWWWWW",
+    "..WWWWWWWWWWWWWWWWWWWWWW..",
+  ],
+});
+
+/** 雲（小） */
+export const CLOUD_B: ShapeDef = assertShape('CLOUD_B', {
+  w: 16,
+  h: 4,
+  rows: [
+    ".....WWWWWW.....",
+    "..WWWWWWWWWWWW..",
+    ".WWWWWWWWWWWWWW.",
+    "..WWWWWWWWWWWW..",
+  ],
+});
+
+/** 待っている人 */
+export const PERSON_A: ShapeDef = assertShape('PERSON_A', {
+  w: 6,
+  h: 8,
+  rows: [
+    "..FF..",
+    "..FF..",
+    ".JJJJ.",
+    "JJJJJJ",
+    ".JJJJ.",
+    ".JJJJ.",
+    ".J..J.",
+    ".K..K.",
+  ],
+});
+
+/** 待っている人（腕の位置違い） */
+export const PERSON_B: ShapeDef = assertShape('PERSON_B', {
+  w: 6,
+  h: 8,
+  rows: [
+    "..FF..",
+    "..FF..",
+    ".JJJJ.",
+    ".JJJJJ",
+    ".JJJJ.",
+    ".JJJJ.",
+    ".J..J.",
+    ".K..K.",
+  ],
+});
+
+/** 出発信号機。1=上灯 2=下灯（点灯色はリバリーで切り替える） */
+export const SIGNAL: ShapeDef = assertShape('SIGNAL', {
+  w: 8,
+  h: 12,
+  rows: [
+    "..MMMM..",
+    ".MMMMMM.",
+    ".MM11MM.",
+    ".MMMMMM.",
+    ".MM22MM.",
+    ".MMMMMM.",
+    "...MM...",
+    "...MM...",
+    "...MM...",
+    "...MM...",
+    "...MM...",
+    "..MMMM..",
+  ],
+});
+
