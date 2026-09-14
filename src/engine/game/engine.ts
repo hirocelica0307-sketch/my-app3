@@ -6,12 +6,14 @@ import { RunContext } from './run';
 import { RunTimer } from './timer';
 import { buildSummary, type RunSummary } from './scoring';
 import { renderScene, type SceneState, type Spark } from '../../render/scene';
+import { renderMap } from '../../render/mapScene';
 import type { LandmarkId } from '../../data/types';
 import {
   sfxArrive, sfxBrake, sfxCombo, sfxDepartureBell, sfxDepartureMelody,
   sfxFanfare, sfxKey, sfxMiss, sfxNodeDone,
 } from '../../audio/sfx';
 import { playBgm, stopBgm } from '../../audio/music';
+import { rollWeather, WEATHER_LABEL } from '../../render/weather';
 import type { RomajiDisplay } from '../typing/types';
 
 export type TimeLimit = 60 | 120 | 180;
@@ -46,6 +48,8 @@ export interface Snapshot {
   timeLimit: TimeLimit;
   lineId: string;
   lineName: string;
+  /** その回の天気（ひらがな表記）。 */
+  weatherLabel: string;
   lineIndex: number;
   trainType: string;
   destination: string;
@@ -113,7 +117,7 @@ export class GameEngine {
     distance: 0, speed: 0, scene: 'suburb', vehicle: '115-yellow',
     stoppedAt: null, direction: 1, shake: 0, sparks: [], time: 0, showSpeed: false,
     landmarks: [], stationRomaji: '', idleTime: 0, doorOpen: 1,
-    signalGreen: false, reduceMotion: false,
+    signalGreen: false, reduceMotion: false, weather: 'sunny',
   };
 
   constructor(options: EngineOptions) {
@@ -148,7 +152,14 @@ export class GameEngine {
       const dt = Math.min((now - this.lastFrame) / 1000, 0.1);
       this.lastFrame = now;
       this.update(dt);
-      if (this.ctx !== null) renderScene(this.ctx, this.scene);
+      if (this.ctx !== null) {
+        // 路線選択中は Canvas を地図に切り替える
+        if (this.phase === 'lineSelect') {
+          renderMap(this.ctx, { selectedId: this.options.line.id, time: this.scene.idleTime });
+        } else {
+          renderScene(this.ctx, this.scene);
+        }
+      }
       this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
@@ -185,6 +196,7 @@ export class GameEngine {
     this.scene.scene = this.run.currentSegment().scene;
     this.scene.direction = 1;
     this.scene.distance = 0;
+    this.rollSceneWeather();
     this.emit();
   }
 
@@ -220,7 +232,13 @@ export class GameEngine {
     this.emit();
   }
 
+  /** プレイのたびに天気を引き直す。同じ路線でも毎回ちがう景色になる。 */
+  private rollSceneWeather(): void {
+    this.scene.weather = rollWeather(this.options.line.id);
+  }
+
   start(): void {
+    this.rollSceneWeather();
     this.phase = 'countdown';
     this.phaseElapsed = 0;
     this.bellRung = false;
@@ -230,6 +248,7 @@ export class GameEngine {
   }
 
   restart(): void {
+    this.rollSceneWeather();
     this.run = new RunContext(this.options.line);
     this.timer.reset();
     this.scene.distance = 0;
@@ -503,6 +522,7 @@ export class GameEngine {
       timeLimit: this.options.timeLimit,
       lineId: line.id,
       lineName: line.nameJp,
+      weatherLabel: WEATHER_LABEL[this.scene.weather],
       lineIndex: this.lineIndex,
       trainType: line.trainType,
       destination: dir === 1 ? line.destination : line.originName,

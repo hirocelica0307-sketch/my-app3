@@ -3,6 +3,8 @@ import { ALL_STATIONS, STATIONS } from '../stations';
 import { LINES } from '../lines';
 import { getFareRule } from '../fareTable';
 import { LANDMARKS } from '../../render/sprites/landmarks';
+import { TRACKS } from '../../audio/tracks';
+import { MAP_LINES, MAP_LINE_MAP } from '../mapLayout';
 
 describe('駅レジストリ', () => {
   it('読みがひらがなと長音符だけで構成されている', () => {
@@ -97,5 +99,59 @@ describe('山陽本線の長さ', () => {
     const line = LINES.find((l) => l.id === 'sanyo-main-down')!;
     const total = line.segments.reduce((a, s) => a + s.km, 0);
     expect(total).toBeGreaterThan(60);
+  });
+});
+
+describe('15路線', () => {
+  it('15路線ある', () => {
+    expect(LINES).toHaveLength(15);
+  });
+  it('路線 id が重複していない', () => {
+    expect(new Set(LINES.map((l) => l.id)).size).toBe(LINES.length);
+  });
+  it('すべての路線に BGM がある（無音の路線を作らない）', () => {
+    for (const line of LINES) {
+      expect(TRACKS[line.id], `${line.nameJp} の曲が無い`).toBeDefined();
+    }
+  });
+  it('やさしい順に並んでいる', () => {
+    const d = LINES.map((l) => l.difficultyOverride ?? 40);
+    for (let i = 1; i < d.length; i++) {
+      expect(d[i]!, `${LINES[i]!.nameJp} が ${LINES[i - 1]!.nameJp} より easy`).toBeGreaterThanOrEqual(d[i - 1]!);
+    }
+  });
+  it('路線名の読みがひらがなだけ', () => {
+    for (const line of LINES) {
+      expect(line.nameKana, line.nameJp).toMatch(/^[ぁ-ゖー]+$/);
+    }
+  });
+});
+
+describe('路線選択の地図', () => {
+  it('すべての路線が地図に載っている', () => {
+    for (const line of LINES) {
+      expect(MAP_LINE_MAP.get(line.id), `${line.nameJp} が地図に無い`).toBeDefined();
+    }
+  });
+  it('地図に実在しない路線が混ざっていない', () => {
+    const ids = new Set(LINES.map((l) => l.id));
+    for (const ml of MAP_LINES) {
+      expect(ids.has(ml.id), `${ml.id} は路線一覧に無い`).toBe(true);
+    }
+  });
+  it('地図は id で引くので並び順に依存しない', () => {
+    // 並びが違っても、id さえ揃っていれば正しい路線が選ばれる
+    expect(new Set(MAP_LINES.map((m) => m.id))).toEqual(new Set(LINES.map((l) => l.id)));
+  });
+  it('折れ線が画面内に収まっている', () => {
+    for (const ml of MAP_LINES) {
+      expect(ml.path.length, ml.id).toBeGreaterThanOrEqual(2);
+      for (const p of ml.path) {
+        expect(p.x, `${ml.id} x`).toBeGreaterThanOrEqual(0);
+        expect(p.x, `${ml.id} x`).toBeLessThanOrEqual(320);
+        expect(p.y, `${ml.id} y`).toBeGreaterThanOrEqual(0);
+        expect(p.y, `${ml.id} y`).toBeLessThanOrEqual(180);
+      }
+    }
   });
 });
