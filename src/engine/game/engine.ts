@@ -10,7 +10,7 @@ import { renderMap } from '../../render/mapScene';
 import type { LandmarkId } from '../../data/types';
 import {
   sfxArrive, sfxBrake, sfxCombo, sfxDepartureBell, sfxDepartureMelody,
-  sfxFanfare, sfxKey, sfxMiss, sfxNodeDone,
+  sfxFanfare, sfxKey, sfxMiss, sfxNodeDone, sfxWhistle,
 } from '../../audio/sfx';
 import { playBgm, stopBgm } from '../../audio/music';
 import { rollWeather, WEATHER_LABEL } from '../../render/weather';
@@ -37,13 +37,15 @@ const SEGMENT_PIXELS = 240;
 const COUNTDOWN_SEC = 3;
 const TURNAROUND_SEC = 1.5;
 
-export interface Toast { id: number; text: string; life: number }
+export interface Toast { id: number; text: string; life: number; kind: 'penalty' | 'gain' | 'info' }
 
 export interface Snapshot {
   phase: Phase;
   paused: boolean;
   imeOn: boolean;
   countdown: number;
+  /** カウントダウンの最後。「出発進行！」を出す区間。 */
+  departureCall: boolean;
   remainSec: number;
   timeLimit: TimeLimit;
   lineId: string;
@@ -71,7 +73,18 @@ export interface Snapshot {
   slideDir: 1 | -1;
   nextSegmentKm: number;
   pauseIndex: number;
+  /** 運賃とボーナスの合計（スコア）。 */
   fare: number;
+  /** 実際のきっぷと同じ計算の運賃。ボーナスは含まない。 */
+  baseFare: number;
+  /** ノーミスなどのボーナス。運賃とは分けて見せる。 */
+  bonus: number;
+  /** 直前の1駅で増えた運賃。 */
+  fareIncrease: number;
+  /** いま車内にいる人数。 */
+  onboard: number;
+  /** のべ何人乗ったか。 */
+  passengersTotal: number;
   combo: number;
   toasts: readonly Toast[];
   missFlash: boolean;
@@ -112,6 +125,7 @@ export class GameEngine {
   private pauseIndex = 0;
   private lineIndex = 0;
   private bellRung = false;
+  private whistleBlown = false;
 
   private scene: SceneState = {
     distance: 0, speed: 0, scene: 'suburb', vehicle: '115-yellow',
@@ -242,6 +256,7 @@ export class GameEngine {
     this.phase = 'countdown';
     this.phaseElapsed = 0;
     this.bellRung = false;
+    this.whistleBlown = false;
     this.scene.showSpeed = true;
     playBgm(this.options.line.id);
     this.emit();
@@ -264,6 +279,7 @@ export class GameEngine {
     this.paused = false;
     this.pauseIndex = 0;
     this.bellRung = false;
+    this.whistleBlown = false;
     this.scene.showSpeed = true;
     playBgm(this.options.line.id);
     this.emit();
@@ -340,6 +356,11 @@ export class GameEngine {
     this.run.completeStation();
     sfxDepartureMelody();
     if (this.run.combo > comboBefore && this.run.combo > 1) sfxCombo(this.run.combo);
+    // 1駅ごとに「いくら増えて、何人乗ったか」を必ず見せる
+    const parts: string[] = [];
+    if (this.run.lastFareIncrease > 0) parts.push(`+¥${this.run.lastFareIncrease.toLocaleString('ja-JP')}`);
+    if (this.run.lastBoardedOn > 0) parts.push(`+${this.run.lastBoardedOn}にん`);
+    if (parts.length > 0) this.pushToast(parts.join('　'), 'gain');
     this.travelSec = this.run.travelSeconds();
     this.segmentStartDistance = this.scene.distance;
     this.phase = 'departing';
@@ -359,7 +380,7 @@ export class GameEngine {
       this.phaseElapsed = 0;
       this.timer.pause();
       sfxArrive();
-      this.pushToast('終点 — 折り返します');
+      this.pushToast('終点 — 折り返します', 'info');
       return;
     }
     this.enterStation();
@@ -399,6 +420,7 @@ export class GameEngine {
       stats: this.run.stats,
       maxCombo: this.run.maxCombo,
       laps: this.run.laps,
+      passengers: this.run.passengersTotal,
     });
     this.isNewRecord = this.options.onFinish?.(this.summary) ?? false;
     stopBgm();
@@ -412,7 +434,6 @@ export class GameEngine {
     // 列車が止まっていても進む時間。雲・乗客・信号はこれで動かす。
     this.scene.idleTime += dt;
     this.scene.time += dt;
-    this.phaseElapsed += dt;
     if (this.scene.shake > 0) this.scene.shake = Math.max(0, this.scene.shake - dt);
     if (this.missFlash > 0) this.missFlash = Math.max(0, this.missFlash - dt);
     this.stepSparks(dt);
@@ -423,6 +444,11 @@ export class GameEngine {
       return;
     }
 
+    // フェーズの経過時間は止めている間は進めない。
+    // ここより前で足すと、一時停止中にカウントダウンが進み、
+    // 走行中なら再開した瞬間に列車が飛ぶ。
+    this.phaseElapsed += dt;
+
     switch (this.phase) {
       case 'title':
       case 'lineSelect':
@@ -432,9 +458,14 @@ export class GameEngine {
         this.scene.distance += 34 * dt;
         break;
       case 'countdown':
-        if (!this.bellRung && this.phaseElapsed >= COUNTDOWN_SEC - 1.1) {
+        // 3・2・1 のあと、発車ベル → 笛 →「出発進行！」で発車
+        if (!this.bellRung && this.phaseElapsed >= COUNTDOWN_SEC - 1.6) {
           this.bellRung = true;
           sfxDepartureBell();
+        }
+        if (!this.whistleBlown && this.phaseElapsed >= COUNTDOWN_SEC - 0.75) {
+          this.whistleBlown = true;
+          sfxWhistle();
         }
         if (this.phaseElapsed >= COUNTDOWN_SEC) this.enterStation();
         break;
@@ -471,8 +502,8 @@ export class GameEngine {
     return Math.max(0, this.options.timeLimit - this.timer.elapsedSec());
   }
 
-  private pushToast(text: string): void {
-    this.toasts = [...this.toasts, { id: ++this.toastId, text, life: 1.4 }].slice(-3);
+  private pushToast(text: string, kind: Toast['kind'] = 'penalty'): void {
+    this.toasts = [...this.toasts, { id: ++this.toastId, text, life: 1.4, kind }].slice(-3);
   }
 
   private stepToasts(dt: number): void {
@@ -518,6 +549,7 @@ export class GameEngine {
       paused: this.paused,
       imeOn: this.imeOn,
       countdown: Math.max(0, Math.ceil(COUNTDOWN_SEC - this.phaseElapsed)),
+      departureCall: this.phase === 'countdown' && this.phaseElapsed >= COUNTDOWN_SEC - 0.75,
       remainSec: this.remaining(),
       timeLimit: this.options.timeLimit,
       lineId: line.id,
@@ -541,6 +573,11 @@ export class GameEngine {
       nextSegmentKm: this.run.currentSegment().km,
       pauseIndex: this.pauseIndex,
       fare: this.run.fare,
+      baseFare: this.run.baseFare,
+      bonus: this.run.bonus,
+      fareIncrease: this.run.lastFareIncrease,
+      onboard: this.run.onboard,
+      passengersTotal: this.run.passengersTotal,
       combo: this.run.combo,
       toasts: this.toasts,
       missFlash: this.missFlash > 0,

@@ -18,6 +18,6 @@ export const AKO_LINE: Line = {
   company: 'JR西日本', lineColor: '#e05a8a', vehicle: '115-yellow',
   destination: '播州赤穂', originName: '東岡山', trainType: '普通',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', difficultyOverride: 48,
+  fareRule: 'jr-main', difficultyOverride: 48,
   scopeNote: '東岡山〜播州赤穂　17駅・約48km',
 };

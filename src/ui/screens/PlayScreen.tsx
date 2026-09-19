@@ -19,14 +19,21 @@ export function PlayScreen({ snap }: Props) {
         />
         <TimerBar remain={snap.remainSec} limit={snap.timeLimit} />
         <span className="hud-value">{snap.remainSec.toFixed(1)}s</span>
-        <span className="hud-value">{yen(snap.fare)}</span>
+        {/* 「実際の運賃」とボーナスは混ぜない。混ぜると本物の額に見えなくなる */}
+        <span className="hud-value" title="うんちん">{yen(snap.baseFare)}</span>
+        {snap.bonus > 0 && <span className="hud-bonus">+{yen(snap.bonus)}</span>}
+        <span className="hud-pax" title="のせているお客さん">
+          <span className="pax-icon">👥</span>{snap.onboard}
+        </span>
         {snap.combo > 1 && <span className="combo">COMBO {snap.combo}</span>}
         <span className="weather-badge">{snap.weatherLabel}</span>
+        {/* 一時停止できることが分からないと、やめたいときに困る */}
+        <span className="hud-esc">[Esc] メニュー</span>
       </div>
 
       <div className="toasts">
         {snap.toasts.map((t) => (
-          <div key={t.id} className="toast">{t.text}</div>
+          <div key={t.id} className={`toast toast-${t.kind}`}>{t.text}</div>
         ))}
       </div>
 

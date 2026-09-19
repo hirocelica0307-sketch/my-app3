@@ -37,6 +37,6 @@ export const SANYO_MAIN_DOWN: Line = {
   trainType: '普通',
   stops: STOPS,
   segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main',
+  fareRule: 'jr-main',
   scopeNote: '岡山県内（三石〜笠岡）21駅・約82km',
 };

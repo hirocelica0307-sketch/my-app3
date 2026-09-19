@@ -98,6 +98,13 @@
 }
 .tcard-value small { font-size: 0.5em; font-weight: 400; margin-left: 0.15em; }
 
+.ticket-sub {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: #6b5c3e;
+  margin-top: 0.2em;
+}
+
 .ticket-praise {
   font-size: 1.05em;
   color: #2f5d34;

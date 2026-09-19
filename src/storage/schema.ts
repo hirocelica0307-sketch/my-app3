@@ -15,6 +15,8 @@ export interface ScoreEntry {
   kpm: number;
   maxCombo: number;
   laps: number;
+  /** のべ何人のせて走ったか。 */
+  passengers: number;
   playedAt: number;
 }
 

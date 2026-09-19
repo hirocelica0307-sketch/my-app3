@@ -201,13 +201,14 @@
 }
 .toast {
   font-family: var(--font-mono);
-  font-size: calc(var(--scale) * 3.2px);
-  background: rgba(150, 30, 30, 0.9);
-  color: #ffd9d9;
+  font-size: calc(var(--scale) * 3.4px);
   padding: 0.25em 0.6em;
-  border-left: 2px solid var(--danger);
   animation: slidein 0.18s ease-out;
+  white-space: nowrap;
 }
+.toast-penalty { background: rgba(150, 30, 30, 0.9); color: #ffd9d9; border-left: 2px solid var(--danger); }
+.toast-gain    { background: rgba(26, 96, 56, 0.92); color: #c8f2d6; border-left: 2px solid var(--typed); }
+.toast-info    { background: rgba(30, 60, 110, 0.92); color: #d6e6ff; border-left: 2px solid #6fa8e8; }
 @keyframes slidein { from { transform: translateX(30%); opacity: 0 } to { transform: none; opacity: 1 } }
 
 /* タイトル・カウントダウン等のオーバーレイ文字 */
@@ -363,7 +364,7 @@ ruby.fg > rt {
 }
 .selected ruby.fg > rt { color: var(--accent); }
 
-/* ===== 路線選択（地図の上に重ねる） ===== */
+/* ===== 路線選択（左に地図・右に一覧） ===== */
 .mapselect {
   position: absolute;
   inset: 0;
@@ -371,64 +372,77 @@ ruby.fg > rt {
 }
 .mapselect-head {
   position: absolute;
-  top: 2%;
-  left: 0; right: 0;
-  text-align: center;
-  font-size: calc(var(--scale) * 3.8px);
-  letter-spacing: 0.2em;
-  line-height: 2.4;
-  color: var(--accent);
-  text-shadow: 0 1px 0 #000, 0 0 6px #000;
-}
-
-/*
- * 選択中の路線名。海の上（画面上部）に置く。
- * 前後の路線名は左右に小さく添えるだけにする。
- * 縦に3つ並べると北側の路線図に重なって読めなくなる。
- */
-.mapselect-now {
-  position: absolute;
-  top: 7%;
-  left: 0; right: 0;
+  top: 1.5%;
+  left: 2%;
   display: flex;
   align-items: baseline;
-  justify-content: center;
-  gap: 1.2em;
-}
-.ms-prev, .ms-next {
-  font-size: calc(var(--scale) * 2.8px);
-  color: rgba(200, 210, 220, 0.45);
-  text-shadow: 0 1px 0 #000;
-}
-.ms-prev::before { content: '↑ '; }
-.ms-next::after { content: ' ↓'; }
-.ms-cur {
-  font-size: calc(var(--scale) * 5.5px);
-  line-height: 2.1;
-  color: var(--ink);
-  letter-spacing: 0.1em;
+  gap: 0.8em;
+  font-size: calc(var(--scale) * 3.4px);
+  letter-spacing: 0.16em;
+  line-height: 2.3;
+  color: var(--accent);
   text-shadow: 0 1px 0 #000, 0 0 5px #000;
 }
-.ms-cur::before { content: '▸ '; color: var(--accent); }
-.ms-cur::after { content: ' ◂'; color: var(--accent); }
+.ms-count {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--ink-dim);
+  letter-spacing: 0.1em;
+}
 
-/* 選択中の路線の詳細カード */
-.mapselect-card {
+/* 右側の一覧。15路線を一度に見せる */
+.linelist {
   position: absolute;
-  left: 3%; right: 3%;
-  bottom: 7%;
+  top: 8%;
+  right: 1.5%;
+  width: 35%;
+  list-style: none;
+  margin: 0;
+  padding: 0.3em 0;
   background: rgba(10, 13, 18, 0.88);
   border: 1px solid var(--line);
+}
+.ll-row {
+  display: grid;
+  grid-template-columns: 0.9em 0.35em 1fr auto;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.05em 0.5em;
+  font-size: calc(var(--scale) * 2.9px);
+  line-height: 2.05;
+  color: var(--pending);
+}
+.ll-row.selected {
+  color: var(--ink);
+  background: rgba(242, 194, 48, 0.16);
+}
+.ll-cursor { color: var(--accent); }
+.ll-color { width: 0.35em; height: 1.1em; display: block; }
+.ll-name { letter-spacing: 0.04em; white-space: nowrap; }
+.ll-stars { font-size: 0.78em; letter-spacing: -0.02em; }
+.ll-stars.r1, .ll-stars.r2 { color: #7fd0a0; }
+.ll-stars.r3 { color: #e8c73c; }
+.ll-stars.r4, .ll-stars.r5 { color: #e8825a; }
+.ll-row.selected .ll-stars { color: var(--accent); }
+
+/* 選択中の路線の詳細（地図の下） */
+.mapselect-card {
+  position: absolute;
+  left: 2%;
+  width: 58%;
+  bottom: 8%;
+  background: rgba(10, 13, 18, 0.9);
+  border: 1px solid var(--line);
   border-left: 3px solid var(--line-color, #0072bc);
-  padding: 0.35em 0.8em 0.45em;
+  padding: 0.35em 0.7em 0.45em;
 }
 .ms-title {
   display: flex;
   align-items: baseline;
-  gap: 0.5em;
+  gap: 0.45em;
   font-size: calc(var(--scale) * 3.8px);
   line-height: 2.1;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 .ms-type {
   font-size: 0.6em;
@@ -449,13 +463,12 @@ ruby.fg > rt {
 .ms-facts {
   display: flex;
   align-items: baseline;
-  gap: 0.9em;
-  font-size: calc(var(--scale) * 3px);
+  gap: 0.8em;
+  font-size: calc(var(--scale) * 2.9px);
   color: var(--ink-dim);
-  margin-top: 0.25em;
+  margin-top: 0.15em;
 }
-.ms-stars { color: var(--accent); letter-spacing: 0.04em; }
-.ms-word { color: var(--ink); }
+.ms-word { color: var(--accent); }
 .ms-best { margin-left: auto; font-family: var(--font-mono); color: var(--accent); }
 
 .mapselect-hint {
@@ -490,4 +503,46 @@ ruby.fg > rt {
   background: rgba(255,255,255,0.08);
   padding: 0 0.45em;
   border-radius: 1px;
+}
+
+/* 「出発進行！」。笛と同時に大きく出す。 */
+.departure-call { text-align: center; }
+.dc-main {
+  font-size: calc(var(--scale) * 13px);
+  letter-spacing: 0.24em;
+  color: var(--accent);
+  text-shadow: 0 calc(var(--scale) * 1px) 0 #000, 0 0 calc(var(--scale) * 4px) rgba(242,194,48,0.6);
+  animation: dc-pop 0.3s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.dc-sub {
+  font-size: calc(var(--scale) * 3.4px);
+  letter-spacing: 0.4em;
+  color: var(--ink);
+  margin-top: 0.6em;
+}
+@keyframes dc-pop {
+  from { transform: scale(2.1); opacity: 0 }
+  to   { transform: scale(1);   opacity: 1 }
+}
+
+/* 乗せているお客さんの数。1駅ごとに増えていく。 */
+.hud-pax {
+  color: #9fd6a8;
+  letter-spacing: 0.04em;
+}
+.pax-icon { margin-right: 0.25em; filter: grayscale(0.3); }
+
+/* 一時停止できることの案内。無いと「やめられない」と思われる。 */
+.hud-esc {
+  margin-left: auto;
+  font-size: 0.85em;
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+}
+
+/* ボーナスは運賃と分けて出す。合算すると「実際の運賃」に見えなくなる。 */
+.hud-bonus {
+  font-size: 0.85em;
+  color: #9fd6a8;
+  letter-spacing: 0.04em;
 }

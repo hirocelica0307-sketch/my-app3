@@ -18,6 +18,6 @@ export const CHIZU_LINE: Line = {
   company: '智頭急行', lineColor: '#c8102e', vehicle: 'hot7000',
   destination: '智頭', originName: '上郡', trainType: '普通',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', difficultyOverride: 74,
+  fareRule: 'chizu-fare', difficultyOverride: 74,
   scopeNote: '上郡〜智頭　14駅・約56km',
 };

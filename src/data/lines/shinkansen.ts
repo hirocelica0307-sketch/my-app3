@@ -21,7 +21,7 @@ export const SHINKANSEN_LINE: Line = {
   company: 'JR西日本', lineColor: '#1b4f9c', vehicle: 'n700-shinkansen',
   destination: '広島', originName: '新神戸', trainType: 'のぞみ',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', surchargeRule: 'shinkansen',
+  fareRule: 'jr-main', surchargeRule: 'shinkansen',
   difficultyOverride: 40,
   scopeNote: '新神戸〜広島　11駅・約252km（1駅が高額）',
 };

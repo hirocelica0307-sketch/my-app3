@@ -17,6 +17,6 @@ export const MIZURIN_LINE: Line = {
   lineColor: '#1a6f3c', vehicle: 'kiha120-mizurin',
   destination: '三菱自工前', originName: '倉敷市', trainType: '普通',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', difficultyOverride: 22,
+  fareRule: 'mizurin', difficultyOverride: 22,
   scopeNote: '倉敷市〜三菱自工前　10駅・約10km',
 };

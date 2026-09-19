@@ -27,7 +27,7 @@ export const HAKUBI_LINE: Line = {
   trainType: '普通',
   stops: STOPS,
   segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main',
+  fareRule: 'jr-main',
   difficultyOverride: 78,
   scopeNote: '岡山〜新見　18駅・約74km（難読駅が多い上級コース）',
 };

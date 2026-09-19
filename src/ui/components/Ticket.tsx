@@ -55,15 +55,15 @@ export function Ticket({ summary: s, lineColor, isNewRecord }: Props) {
           <div className="ticket-cards">
             <div className="tcard">
               <div className="tcard-label">うんちん</div>
-              <div className="tcard-value">{yen(s.fare)}</div>
+              <div className="tcard-value">{yen(s.baseFare)}</div>
             </div>
             <div className="tcard">
               <div className="tcard-label">ついたえき</div>
               <div className="tcard-value">{s.reachedCount}<small>えき</small></div>
             </div>
             <div className="tcard">
-              <div className="tcard-label">うったかず</div>
-              <div className="tcard-value">{s.keystrokes.toLocaleString('ja-JP')}<small>もじ</small></div>
+              <div className="tcard-label">のせたおきゃくさん</div>
+              <div className="tcard-value">{s.passengers.toLocaleString('ja-JP')}<small>にん</small></div>
             </div>
             <div className="tcard">
               <div className="tcard-label">せいかくりつ</div>
@@ -72,6 +72,11 @@ export function Ticket({ summary: s, lineColor, isNewRecord }: Props) {
           </div>
 
           <div className="ticket-praise">▸ {praise(s.accuracy, s.reachedCount)}</div>
+          <div className="ticket-sub">
+            うんちん {yen(s.baseFare)} ＋ ボーナス {yen(s.bonus)}　／　
+            うった もじ {s.keystrokes.toLocaleString('ja-JP')}　／　
+            えいぎょうキロ {s.km.toFixed(1)}km
+          </div>
 
           <div className="ticket-foot">
             <span className="punch" />

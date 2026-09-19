@@ -18,7 +18,7 @@ export const IBARA_LINE: Line = {
   company: '井原鉄道', lineColor: '#2e9e5b', vehicle: 'ibara',
   destination: '神辺', originName: '総社', trainType: '普通',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', difficultyOverride: 92,
+  fareRule: 'ibara-fare', difficultyOverride: 92,
   scopeNote: '総社〜神辺　15駅・約42km（長い駅名の宝庫）',
   hideRomajiDefault: false,
 };

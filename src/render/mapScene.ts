@@ -32,18 +32,7 @@ function polyline(ctx: CanvasRenderingContext2D, pts: readonly { x: number; y: n
 }
 
 function drawBase(ctx: CanvasRenderingContext2D, time: number): void {
-  // 海
-  for (let y = 0; y < VIEW_H; y++) {
-    ctx.fillStyle = y > 130 ? SEA_DEEP : SEA;
-    ctx.fillRect(0, y, VIEW_W, 1);
-  }
-  // 波
-  ctx.fillStyle = 'rgba(255,255,255,0.22)';
-  for (let row = 0; row < 4; row++) {
-    const y = 140 + row * 9;
-    const off = (time * (7 + row * 3)) % 40;
-    for (let x = -40; x < VIEW_W + 40; x += 40) ctx.fillRect(Math.round(x + off), y, 6, 1);
-  }
+  void time; // 海は renderMap 側で画面全体に塗ってある
   // 陸地
   ctx.fillStyle = LAND;
   ctx.beginPath();
@@ -97,9 +86,29 @@ export interface MapSceneState {
   time: number;
 }
 
+/**
+ * 地図は画面の左 62% に収める。
+ * 右側は路線の一覧（DOM）に空けておく。15路線を ↑↓ で送るだけだと
+ * 今どのあたりを見ているのか分からず、選びにくかった。
+ */
+const MAP_W = 0.62;
+
 export function renderMap(ctx: CanvasRenderingContext2D, s: MapSceneState): void {
-  ctx.fillStyle = '#0d1016';
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  // 先に画面全体を海で塗る。
+  // 縮小した地図だけを描くと、その外側に黒い縁が出て窓のように見える。
+  for (let y = 0; y < VIEW_H; y++) {
+    ctx.fillStyle = y > 108 ? SEA_DEEP : SEA;
+    ctx.fillRect(0, y, VIEW_W, 1);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  for (let row = 0; row < 6; row++) {
+    const y = 108 + row * 12;
+    const off = (s.time * (6 + row * 3)) % 46;
+    for (let x = -46; x < VIEW_W + 46; x += 46) ctx.fillRect(Math.round(x + off), y, 7, 1);
+  }
+  ctx.save();
+  ctx.scale(MAP_W, MAP_W);
+  ctx.translate(6, VIEW_H * (1 - MAP_W) * 0.5 / MAP_W);
   drawBase(ctx, s.time);
 
   const selectedLine = MAP_LINE_MAP.get(s.selectedId);
@@ -143,6 +152,7 @@ export function renderMap(ctx: CanvasRenderingContext2D, s: MapSceneState): void
   }
 
   drawOkayamaMark(ctx, s.time);
+  ctx.restore();
 }
 
 /** 選択中の路線の終点側に、その路線の車両を小さく置く。 */
