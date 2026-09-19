@@ -1,4 +1,5 @@
 import { Furigana } from '../components/Furigana';
+import { OkayamaMap } from '../components/OkayamaMap';
 import { getStation } from '../../data/stations';
 import type { Line } from '../../data/types';
 
@@ -21,9 +22,12 @@ export function difficultyOf(line: Line): { stars: string; word: string; rank: n
 /**
  * 路線選択。
  *
- * 左に岡山県の路線図（Canvas）、右に15路線の一覧（DOM）。
+ * 左に岡山県の路線図（SVG）、右に15路線の一覧（DOM）。
  * 地図だけだと「今どの路線を見ているのか」「あと何本あるのか」が分からず
  * 選びにくかったので、全部が一度に見える一覧を並べた。
+ *
+ * 地図はもと Canvas（320×180）に描いて拡大していたが、
+ * 線も電車もギザギザで見えにくいと言われたので SVG に置き換えた。
  */
 export function LineSelectScreen({ lines, index, bestOf }: Props) {
   const current = lines[index]!;
@@ -34,6 +38,8 @@ export function LineSelectScreen({ lines, index, bestOf }: Props) {
 
   return (
     <div className="mapselect">
+      <OkayamaMap selectedId={current.id} color={current.lineColor} />
+
       <div className="mapselect-head">
         <Furigana kana="ろせん">路線</Furigana>を えらんでください
         <span className="ms-count">{index + 1} / {lines.length}</span>

@@ -1,11 +1,19 @@
 /*
- * Phase 1 は日本語ピクセルフォントを同梱せず、フォールバックだけで組む。
- * 後から DotGothic16 のサブセットを public/fonts/ に置いて
- * --font-jp を差し替えるだけで移行できる。
+ * 書体は**丸ゴシック**でそろえる。
+ *
+ * 以前はドット調（DotGothic16）＋アンチエイリアス切りで組んでいたが、
+ * 画数の多い駅名（美袋・石蟹・妹尾など）がつぶれて読めず、
+ * 長く打っていると目が疲れる、と使ってもらって分かった。
+ * ゲームの絵はドット絵のままで、**文字だけ**やわらかく読みやすくする。
+ *
+ * ローマ字と数字は Baloo 2（丸くて太い）。
+ * 小学生が見るのは主にこの列なので、日本語より一段はっきりさせる。
  */
 :root {
-  --font-jp: 'DotGothic16', 'MS Gothic', 'Osaka-Mono', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-  --font-mono: ui-monospace, 'SFMono-Regular', Consolas, 'Courier New', monospace;
+  --font-jp: 'M PLUS Rounded 1c', 'Kosugi Maru', 'Hiragino Maru Gothic ProN',
+    'Rounded Mplus 1c', 'Yu Gothic UI', Meiryo, sans-serif;
+  --font-mono: 'Baloo 2', 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN',
+    ui-rounded, 'Segoe UI', sans-serif;
 
   --ink: #e8eef5;
   --ink-dim: #8b97a6;
@@ -27,20 +35,32 @@ html, body, #root {
   margin: 0;
 }
 
+/*
+ * アンチエイリアスは**切らない**。
+ * ドット感は出るが、ふりがなのような小さい字が読めなくなる。
+ * ドット絵の質感は Canvas 側（image-rendering: pixelated）で担保する。
+ */
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-jp);
   overflow: hidden;
-  -webkit-font-smoothing: none;
-  font-smooth: never;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* 画面全体。16:9 の固定アスペクト比コンテナに Canvas と HUD を重ねる。 */
+/*
+ * 画面全体。上に 16:9 のステージ、下にローマ字練習用のキーボードを並べる。
+ * キーボードの高さぶんはステージの倍率計算（fitScale）で先に差し引いてある。
+ */
 .app {
   height: 100%;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 4px;
 }
 

@@ -29,6 +29,11 @@ export interface Settings {
   /** BGM の音量 0..1。 */
   bgmVolume: number;
   muted: boolean;
+  /**
+   * 画面下のローマ字キーボードを出すか。
+   * 出すぶんステージが少し小さくなるので、慣れた人は消せるようにしてある。
+   */
+  showKeyboard: boolean;
 }
 
 export interface GlobalStats {
@@ -53,7 +58,7 @@ export const DEFAULT_SAVE: SaveDataV1 = {
   highScores: {},
   settings: {
     showRomaji: true, defaultTimeLimit: 60, retroEffects: true,
-    seVolume: 0.5, bgmVolume: 0.28, muted: false,
+    seVolume: 0.5, bgmVolume: 0.28, muted: false, showKeyboard: true,
   },
   stats: { totalRuns: 0, totalKeystrokes: 0, totalMisses: 0, totalSeconds: 0, missByKana: {} },
 };

@@ -85,6 +85,32 @@ export class RunContext {
   /** 直前の1駅で増えた額。「1駅ごとにいくら増えたか」を見せるために使う。 */
   lastFareIncrease = 0;
 
+  /**
+   * いま打っている駅を打ち終えたら増える額。
+   * 「打つとお金が増える」を**打つ前から**見せるために使う。
+   * completeStation() と同じ式で先に計算しているだけなので、
+   * 実際に着いたときの増加額と必ず一致する。
+   */
+  get nextFareIncrease(): number {
+    const rule = getFareRule(this.line.fareRule);
+    const km = this.km + this.currentSegment().km;
+    const after = calcFare(rule, km, this.reachedCount + 1)
+      + calcSurcharge(this.line.surchargeRule, km);
+    return Math.max(0, after - this.baseFare);
+  }
+
+  /**
+   * いまの駅をどれだけ打てたか 0..1。
+   * 確定した綴りの長さ ÷ 駅名全体の綴りの長さ。
+   * 綴り方（shi / si）で分母が変わるが、ゲージの見た目にしか使わない。
+   */
+  get stationProgress(): number {
+    const total = (this.typing.suffixHint[0] ?? '').length;
+    if (total === 0) return 0;
+    const typed = this.typing.committed.length + this.typing.typed.length;
+    return Math.min(1, typed / total);
+  }
+
   get bonus(): number {
     const combo = this.comboStations * COMBO_BONUS_PER_STATION;
     const terminal = Math.round(this.baseFare * TERMINAL_BONUS_RATE * this.laps);
