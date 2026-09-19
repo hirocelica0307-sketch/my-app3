@@ -1,11 +1,10 @@
+import { FarePanel } from '../components/FarePanel';
 import { RailStrip } from '../components/RailStrip';
 import { RollSign } from '../components/RollSign';
 import { TimerBar } from '../components/TimerBar';
 import type { Snapshot } from '../../engine/game/engine';
 
 interface Props { snap: Snapshot }
-
-const yen = (n: number) => `¥${n.toLocaleString('ja-JP')}`;
 
 export function PlayScreen({ snap }: Props) {
   return (
@@ -19,17 +18,24 @@ export function PlayScreen({ snap }: Props) {
         />
         <TimerBar remain={snap.remainSec} limit={snap.timeLimit} />
         <span className="hud-value">{snap.remainSec.toFixed(1)}s</span>
-        {/* 「実際の運賃」とボーナスは混ぜない。混ぜると本物の額に見えなくなる */}
-        <span className="hud-value" title="うんちん">{yen(snap.baseFare)}</span>
-        {snap.bonus > 0 && <span className="hud-bonus">+{yen(snap.bonus)}</span>}
-        <span className="hud-pax" title="のせているお客さん">
-          <span className="pax-icon">👥</span>{snap.onboard}
-        </span>
         {snap.combo > 1 && <span className="combo">COMBO {snap.combo}</span>}
         <span className="weather-badge">{snap.weatherLabel}</span>
         {/* 一時停止できることが分からないと、やめたいときに困る */}
         <span className="hud-esc">[Esc] メニュー</span>
       </div>
+
+      {/*
+        運賃とお客さんは上のバーではなく、専用のパネルに大きく出す。
+        バーの端に小さく並べていたときは増えたことに気づいてもらえなかった。
+      */}
+      <FarePanel
+        fare={snap.baseFare}
+        bonus={snap.bonus}
+        onboard={snap.onboard}
+        passengersTotal={snap.passengersTotal}
+        nextFareIncrease={snap.nextFareIncrease}
+        progress={snap.stationProgress}
+      />
 
       <div className="toasts">
         {snap.toasts.map((t) => (

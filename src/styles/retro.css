@@ -40,7 +40,8 @@
 }
 .timer-fill.low { background: linear-gradient(90deg, #d4412f, #ff8a5c); }
 
-.hud-value { color: var(--accent); font-weight: 700; }
+/* 数字は等幅にする。カウントアップ中に桁の幅が変わると数字が揺れて読めない。 */
+.hud-value { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
 .hud-label { color: var(--ink-dim); }
 .combo { color: #7de0a0; }
 
@@ -250,13 +251,30 @@
   color: var(--ink-dim);
   margin-top: 1em;
 }
-.warn { color: var(--danger); }
+.warn { color: var(--danger); font-size: 1.1em; font-weight: 700; }
 .warn-box {
   border: 2px solid var(--danger);
-  padding: 1em 1.4em;
-  background: rgba(30, 10, 10, 0.9);
+  border-radius: calc(var(--scale) * 2px);
+  padding: 1em 1.6em 1.2em;
+  background: rgba(30, 10, 10, 0.94);
   font-size: calc(var(--scale) * 3.6px);
   line-height: 1.9;
+}
+.warn-body { margin-top: 0.7em; }
+/*
+ * 戻し方をここに必ず書く。
+ * 以前は「英数に切り替えてください」だけで、切り替えたあと何をすれば
+ * 画面が戻るのか分からず、毎回リロードさせてしまっていた。
+ */
+.warn-ok {
+  margin-top: 0.9em;
+  padding: 0.25em 0.7em;
+  display: inline-block;
+  font-size: 0.92em;
+  color: #c8f2d6;
+  background: rgba(30, 90, 50, 0.45);
+  border: 1px solid #3f8a5c;
+  border-radius: calc(var(--scale) * 1px);
 }
 
 /* ===== 一時停止メニュー ===== */
@@ -355,9 +373,10 @@ ruby.fg {
   -webkit-ruby-position: before;
 }
 ruby.fg > rt {
-  font-size: 0.5em;
-  letter-spacing: 0.04em;
-  color: var(--ink-dim);
+  /* 0.5em だと画面上で 5px 前後になり、ふりがなとして役に立たなかった */
+  font-size: 0.58em;
+  letter-spacing: 0.02em;
+  color: #b9c6d4;
   line-height: 1.1;
   text-align: center;
   user-select: none;
@@ -369,6 +388,53 @@ ruby.fg > rt {
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+/*
+ * 地図は SVG。Canvas と違って拡大しても線がなめらかなまま出る。
+ * ステージ全体を覆い、この上に見出し・一覧・カードを重ねる。
+ */
+.okmap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* 地図の中の文字。SVG なので拡大してもにじまない。 */
+.okmap-label {
+  font-family: var(--font-jp);
+  font-size: 7px;
+  font-weight: 700;
+  fill: #ffffff;
+  paint-order: stroke;
+  stroke: #16242e;
+  stroke-width: 2.4px;
+  stroke-linejoin: round;
+  letter-spacing: 0.08em;
+}
+.okmap-waves path { animation: okmap-wave linear infinite; }
+@keyframes okmap-wave {
+  from { transform: translateX(0) }
+  to   { transform: translateX(40px) }
+}
+/* 岡山駅の印。どこが中心か分かるようにゆっくり広がる。 */
+.okmap-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: okmap-pulse 2.2s ease-out infinite;
+}
+@keyframes okmap-pulse {
+  0%   { transform: scale(0.7); opacity: 0.9 }
+  100% { transform: scale(1.8); opacity: 0 }
+}
+/* 選択中の路線は光が流れているように見せる。どれを選んでいるか一目で分かる。 */
+.okmap-live {
+  stroke-dasharray: 9 5;
+  animation: okmap-flow 1.1s linear infinite;
+}
+@keyframes okmap-flow {
+  to { stroke-dashoffset: -14 }
 }
 .mapselect-head {
   position: absolute;
@@ -393,9 +459,9 @@ ruby.fg > rt {
 /* 右側の一覧。15路線を一度に見せる */
 .linelist {
   position: absolute;
-  top: 8%;
+  top: 7%;
   right: 1.5%;
-  width: 35%;
+  width: 38%;
   list-style: none;
   margin: 0;
   padding: 0.3em 0;
@@ -408,8 +474,9 @@ ruby.fg > rt {
   align-items: center;
   gap: 0.4em;
   padding: 0.05em 0.5em;
-  font-size: calc(var(--scale) * 2.9px);
-  line-height: 2.05;
+  /* 小学生が読む一覧なので、15行が入るぎりぎりまで大きくする */
+  font-size: calc(var(--scale) * 3.6px);
+  line-height: 1.85;
   color: var(--pending);
 }
 .ll-row.selected {
@@ -474,12 +541,12 @@ ruby.fg > rt {
 .mapselect-hint {
   position: absolute;
   left: 0; right: 0;
-  bottom: 2%;
+  bottom: 1.5%;
   text-align: center;
-  font-family: var(--font-mono);
-  font-size: calc(var(--scale) * 2.8px);
-  color: var(--ink-dim);
-  text-shadow: 0 1px 0 #000;
+  font-size: calc(var(--scale) * 3.4px);
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 3px #000, 0 0 6px #000;
 }
 
 /* ミュート中の表示。音が出ない理由が分からないと混乱するので必ず出す。 */
@@ -545,4 +612,92 @@ ruby.fg > rt {
   font-size: 0.85em;
   color: #9fd6a8;
   letter-spacing: 0.04em;
+}
+
+/* ===== 運賃・お客さんのパネル ===== */
+/*
+ * 上の LED バーに小さく出していたときは「増えているのが分からない」と言われた。
+ * 大きく、動かして、増えた額を別に出す。この3つで初めて気づいてもらえる。
+ */
+.farepanel {
+  position: absolute;
+  left: 1.6%;
+  top: 15%;
+  width: 26%;
+  padding: 0.5em 0.7em 0.6em;
+  background: rgba(9, 12, 17, 0.84);
+  border: 1px solid var(--line);
+  border-left: calc(var(--scale) * 1px) solid var(--accent);
+  border-radius: calc(var(--scale) * 1.5px);
+  box-shadow: 0 calc(var(--scale) * 1px) calc(var(--scale) * 4px) rgba(0,0,0,0.5);
+}
+.fp-block + .fp-block { margin-top: 0.45em; }
+.fp-label {
+  font-size: calc(var(--scale) * 2.8px);
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+}
+.fp-value {
+  font-family: var(--font-mono);
+  font-size: calc(var(--scale) * 8px);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  /* カウントアップ中に桁の幅が変わると数字が揺れて読めない */
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(var(--scale) * 0.6px) 0 #000;
+}
+.fp-pax { color: #9fe6ad; font-size: calc(var(--scale) * 6px); }
+.fp-yen { font-size: 0.6em; margin-right: 0.12em; }
+.fp-unit { font-size: 0.45em; margin-left: 0.2em; color: var(--ink-dim); }
+/* 増えた瞬間だけ一度ふくらむ。目が自然にそこへ行く。 */
+.fp-value.bump { animation: fp-bump 0.42s cubic-bezier(0.2, 1.7, 0.4, 1); }
+@keyframes fp-bump {
+  0%   { transform: scale(1) }
+  35%  { transform: scale(1.22) }
+  100% { transform: scale(1) }
+}
+.fp-gain {
+  font-family: var(--font-mono);
+  font-size: calc(var(--scale) * 3.4px);
+  font-weight: 700;
+  color: #8cf07a;
+  animation: fp-rise 1.1s ease-out forwards;
+}
+@keyframes fp-rise {
+  0%   { transform: translateY(0.5em); opacity: 0 }
+  25%  { transform: translateY(0); opacity: 1 }
+  100% { transform: translateY(-0.4em); opacity: 0 }
+}
+.fp-bonus {
+  font-size: calc(var(--scale) * 2.6px);
+  color: #9fd6a8;
+  letter-spacing: 0.06em;
+}
+
+/* 次の駅でいくら増えるか。打った分だけゲージが伸びる。 */
+.fp-next {
+  margin: 0.4em 0 0.15em;
+  padding-top: 0.35em;
+  border-top: 1px dashed #333d4b;
+}
+.fp-next-head {
+  font-size: calc(var(--scale) * 2.8px);
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+}
+.fp-next-head b { color: var(--accent); font-family: var(--font-mono); font-size: 1.25em; }
+.fp-gauge {
+  margin-top: 0.25em;
+  height: calc(var(--scale) * 1.6px);
+  background: #222a35;
+  border: 1px solid #39424f;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.fp-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3fb26a, #a8ef7a);
+  transition: width 90ms linear;
 }

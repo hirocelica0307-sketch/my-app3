@@ -1,12 +1,11 @@
 import type { Line } from '../../data/types';
-import { feedKey } from '../typing/matcher';
+import { expectedChars, feedKey } from '../typing/matcher';
 import { renderRomaji, furiganaSplit } from '../typing/hint';
 import { getStation } from '../../data/stations';
 import { RunContext } from './run';
 import { RunTimer } from './timer';
 import { buildSummary, type RunSummary } from './scoring';
 import { renderScene, type SceneState, type Spark } from '../../render/scene';
-import { renderMap } from '../../render/mapScene';
 import type { LandmarkId } from '../../data/types';
 import {
   sfxArrive, sfxBrake, sfxCombo, sfxDepartureBell, sfxDepartureMelody,
@@ -25,6 +24,7 @@ export type Phase =
 export const PAUSE_ITEMS = [
   { id: 'resume', label: 'つづける', key: 'Esc' },
   { id: 'restart', label: 'さいしょから', key: 'R' },
+  { id: 'keyboard', label: 'キーボードを だす / けす', key: 'K' },
   { id: 'mute', label: 'おとの ON / OFF', key: 'M' },
   { id: 'title', label: 'タイトルへ もどる', key: 'T' },
 ] as const;
@@ -81,6 +81,12 @@ export interface Snapshot {
   bonus: number;
   /** 直前の1駅で増えた運賃。 */
   fareIncrease: number;
+  /** 次の駅に着いたら増える運賃。打つ前から見せる。 */
+  nextFareIncrease: number;
+  /** いまの駅をどれだけ打てたか 0..1。 */
+  stationProgress: number;
+  /** 次に押せるキー。画面下のキーボードを光らせるのに使う。 */
+  expectedKeys: readonly string[];
   /** いま車内にいる人数。 */
   onboard: number;
   /** のべ何人乗ったか。 */
@@ -167,12 +173,10 @@ export class GameEngine {
       this.lastFrame = now;
       this.update(dt);
       if (this.ctx !== null) {
-        // 路線選択中は Canvas を地図に切り替える
-        if (this.phase === 'lineSelect') {
-          renderMap(this.ctx, { selectedId: this.options.line.id, time: this.scene.idleTime });
-        } else {
-          renderScene(this.ctx, this.scene);
-        }
+        // 路線選択中は地図（SVG）が画面全体を覆うので Canvas は描かない。
+        // ドット絵の地図は拡大すると線がギザギザで読み取れなかったため、
+        // この画面だけ SVG に置き換えてある。
+        if (this.phase !== 'lineSelect') renderScene(this.ctx, this.scene);
       }
       this.raf = requestAnimationFrame(loop);
     };
@@ -576,6 +580,12 @@ export class GameEngine {
       baseFare: this.run.baseFare,
       bonus: this.run.bonus,
       fareIncrease: this.run.lastFareIncrease,
+      nextFareIncrease: this.run.nextFareIncrease,
+      stationProgress: this.run.stationProgress,
+      // 打てるのは停車中だけ。走行中も光らせると次の駅の文字を先に押してしまう。
+      expectedKeys: this.phase === 'atStation' && !this.paused && !this.imeOn
+        ? expectedChars(this.run.typing)
+        : [],
       onboard: this.run.onboard,
       passengersTotal: this.run.passengersTotal,
       combo: this.run.combo,

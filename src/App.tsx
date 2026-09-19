@@ -3,7 +3,7 @@ import { GameEngine, TIME_LIMITS, type TimeLimit } from './engine/game/engine';
 import { createKeyListener } from './engine/input/keyboard';
 import { isReservedLetter } from './engine/input/shortcuts';
 import { ImeWatcher } from './engine/input/ime';
-import { createStage, fitScale, VIEW_H, VIEW_W } from './render/canvas';
+import { createStage, fitScale, KEYBOARD_RESERVE, VIEW_H, VIEW_W } from './render/canvas';
 import { getLine, LINES, DEFAULT_LINE_ID } from './data/lines';
 import { bestFare, loadSave, recordScore, updateSettings } from './storage/save';
 import { useEngineSnapshot } from './ui/hooks/useGameEngine';
@@ -15,6 +15,7 @@ import { CountdownScreen } from './ui/screens/CountdownScreen';
 import { PauseScreen } from './ui/screens/PauseScreen';
 import { Ticket } from './ui/components/Ticket';
 import { ImeWarning } from './ui/components/ImeWarning';
+import { Keyboard } from './ui/components/Keyboard';
 import type { RunSummary } from './engine/game/scoring';
 import { isMuted, setMuted, setVolumes, unlock } from './audio/context';
 import { playBgm } from './audio/music';
@@ -98,6 +99,18 @@ export function App() {
     updateSettings({ muted: next });
   }, []);
 
+  /**
+   * 画面下のローマ字キーボード。既定は表示。
+   * 出すとステージが一段小さくなるので、慣れた人は消せるようにしてある。
+   */
+  const [showKeyboard, setShowKeyboard] = useState<boolean>(() => settings.showKeyboard);
+  const toggleKeyboard = useCallback(() => {
+    setShowKeyboard((v) => {
+      updateSettings({ showKeyboard: !v });
+      return !v;
+    });
+  }, []);
+
   // Canvas を engine に繋ぐ
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -109,17 +122,22 @@ export function App() {
       const box = stageRef.current;
       const outer = appRef.current;
       if (box === null || outer === null) return;
-      const scale = fitScale(outer.clientWidth - 8, outer.clientHeight - 8);
+      // キーボードを出すときは、その高さを先に差し引いて倍率を決める。
+      // あとから引くと 1 段ぶん縦にはみ出す。
+      const reserve = showKeyboard ? KEYBOARD_RESERVE : 0;
+      const scale = fitScale(outer.clientWidth - 8, outer.clientHeight - 14, reserve);
       stage.scale = scale;
       box.style.width = `${VIEW_W * scale}px`;
       box.style.height = `${VIEW_H * scale}px`;
       box.style.setProperty('--scale', String(scale));
+      // キーボードはステージ幅を基準に組むので、外側へも伝える
+      outer.style.setProperty('--stage-w', `${VIEW_W * scale}px`);
     };
     resize();
     const ro = new ResizeObserver(resize);
     if (appRef.current !== null) ro.observe(appRef.current);
     return () => { ro.disconnect(); engine.detach(); };
-  }, [engine]);
+  }, [engine, showKeyboard]);
 
   // 音量を保存された設定から反映する
   useEffect(() => {
@@ -127,9 +145,17 @@ export function App() {
     setMuted(settings.muted);
   }, [settings]);
 
+  /**
+   * IME 監視は**アプリ全体で1つ**にする。
+   * 以前は監視用と keydown 用で別インスタンスを作っていたため、
+   * keydown 側が「変換中ではない」と判断しても engine に伝わらず、
+   * 英数に戻しても警告が消えない（再読み込みが必要）不具合になっていた。
+   */
+  const ime = useMemo(() => new ImeWatcher(), []);
+
   // IME 監視
   useEffect(() => {
-    const watcher = new ImeWatcher();
+    const watcher = ime;
     watcher.attach();
     const unsub = watcher.subscribe((on) => engine.setImeOn(on));
     const refocus = () => watcher.refocus();
@@ -141,16 +167,17 @@ export function App() {
       window.removeEventListener('focus', refocus);
       watcher.detach();
     };
-  }, [engine]);
+  }, [engine, ime]);
 
   // キーボード
   useEffect(() => {
-    const watcher = new ImeWatcher();
+    const watcher = ime;
 
     const runPauseAction = () => {
       switch (engine.pauseSelection) {
         case 'resume': engine.setPaused(false); break;
         case 'restart': engine.restart(); break;
+        case 'keyboard': toggleKeyboard(); break;
         case 'mute': toggleMute(); break;
         case 'title': engine.backToTitle(); break;
       }
@@ -174,6 +201,7 @@ export function App() {
           if (engine.isPaused) {
             if (k === 'r') engine.restart();
             else if (k === 't') engine.backToTitle();
+            else if (k === 'k') toggleKeyboard();
             return;
           }
           engine.handleChar(key);
@@ -237,7 +265,7 @@ export function App() {
     );
     window.addEventListener('keydown', listener);
     return () => window.removeEventListener('keydown', listener);
-  }, [engine, timeLimit, chooseTime]);
+  }, [engine, timeLimit, chooseTime, ime, chooseLine, toggleMute, toggleKeyboard]);
 
   // タブが隠れたら自動ポーズ
   useEffect(() => {
@@ -309,6 +337,18 @@ export function App() {
           <PauseScreen index={snap.pauseIndex} />
         )}
       </div>
+
+      {/*
+        ローマ字を覚えている途中の子は、次のキーを探すのに手元を見てしまい
+        画面の駅名を見失う。次に押せるキーをここで光らせる。
+      */}
+      {showKeyboard && (
+        <Keyboard
+          expected={snap.expectedKeys}
+          miss={snap.missFlash}
+          active={snap.phase === 'atStation' && !snap.paused && !snap.imeOn}
+        />
+      )}
     </div>
   );
 }
