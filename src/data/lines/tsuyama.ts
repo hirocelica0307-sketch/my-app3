@@ -25,7 +25,7 @@ export const TSUYAMA_LINE: Line = {
   trainType: '普通',
   stops: STOPS,
   segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main',
+  fareRule: 'jr-local',
   difficultyOverride: 56,
   scopeNote: '岡山〜津山　17駅・約59km',
 };

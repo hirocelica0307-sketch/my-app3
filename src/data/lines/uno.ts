@@ -26,7 +26,7 @@ export const UNO_LINE: Line = {
   trainType: '普通',
   stops: STOPS,
   segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main',
+  fareRule: 'jr-main',
   difficultyOverride: 26,
   scopeNote: '岡山〜宇野　15駅・約33km',
 };

@@ -65,6 +65,31 @@ export function sfxDepartureBell(): void {
   }
 }
 
+/**
+ * 出発の笛。駅員が吹く「ピーッ」。
+ * 高い音に少しノイズを混ぜ、細かく揺らすと笛らしくなる。
+ */
+export function sfxWhistle(): void {
+  const a = getAudio();
+  if (a === null) return;
+  const t = a.ctx.currentTime;
+  const dur = 0.62;
+
+  // 芯になる高い音を2つ重ねて、わずかにずらして唸りを作る
+  playTone(a.ctx, a.se, 2350, t, {
+    wave: 'sine', duration: dur, gain: 0.2, attack: 0.02, release: 0.14,
+  });
+  playTone(a.ctx, a.se, 2362, t, {
+    wave: 'sine', duration: dur, gain: 0.15, attack: 0.03, release: 0.14, detune: 8,
+  });
+  // 息の音
+  playNoise(a.ctx, a.se, t, { duration: dur, gain: 0.05, from: 3200, to: 2600, q: 12 });
+  // 吹き終わりの落ち
+  playTone(a.ctx, a.se, 2350, t + dur - 0.05, {
+    wave: 'sine', duration: 0.12, gain: 0.12, glideTo: 1500, release: 0.1,
+  });
+}
+
 /** 到着チャイム。終点に着いたとき。 */
 export function sfxArrive(): void {
   const a = getAudio();

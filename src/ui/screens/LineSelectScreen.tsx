@@ -9,19 +9,21 @@ interface Props {
 }
 
 /** 難易度を★と、ひらがなの言葉の両方で見せる。 */
-function difficultyOf(line: Line): { stars: string; word: string } {
+export function difficultyOf(line: Line): { stars: string; word: string; rank: number } {
   const d = line.difficultyOverride ?? 40;
-  if (d < 20) return { stars: '★☆☆☆☆', word: 'やさしい' };
-  if (d < 32) return { stars: '★★☆☆☆', word: 'すこしやさしい' };
-  if (d < 50) return { stars: '★★★☆☆', word: 'ふつう' };
-  if (d < 76) return { stars: '★★★★☆', word: 'むずかしい' };
-  return { stars: '★★★★★', word: 'とてもむずかしい' };
+  if (d < 20) return { stars: '★☆☆☆☆', word: 'やさしい', rank: 1 };
+  if (d < 32) return { stars: '★★☆☆☆', word: 'すこしやさしい', rank: 2 };
+  if (d < 50) return { stars: '★★★☆☆', word: 'ふつう', rank: 3 };
+  if (d < 76) return { stars: '★★★★☆', word: 'むずかしい', rank: 4 };
+  return { stars: '★★★★★', word: 'とてもむずかしい', rank: 5 };
 }
 
 /**
  * 路線選択。
- * 背景の Canvas に岡山県の路線図が描かれ、選んだ路線が光る。
- * 日本語は Canvas に描けないので、こちら（DOM）で地図の上に重ねる。
+ *
+ * 左に岡山県の路線図（Canvas）、右に15路線の一覧（DOM）。
+ * 地図だけだと「今どの路線を見ているのか」「あと何本あるのか」が分からず
+ * 選びにくかったので、全部が一度に見える一覧を並べた。
  */
 export function LineSelectScreen({ lines, index, bestOf }: Props) {
   const current = lines[index]!;
@@ -34,17 +36,27 @@ export function LineSelectScreen({ lines, index, bestOf }: Props) {
     <div className="mapselect">
       <div className="mapselect-head">
         <Furigana kana="ろせん">路線</Furigana>を えらんでください
+        <span className="ms-count">{index + 1} / {lines.length}</span>
       </div>
 
-      {/* 選択中の路線名だけを大きく。前後の名前まで出すと地図に重なって読めない */}
-      <div className="mapselect-now">
-        <span className="ms-prev">{lines[(index - 1 + lines.length) % lines.length]!.nameJp}</span>
-        <span className="ms-cur">
-          <Furigana kana={current.nameKana}>{current.nameJp}</Furigana>
-        </span>
-        <span className="ms-next">{lines[(index + 1) % lines.length]!.nameJp}</span>
-      </div>
+      {/* 右側の一覧。15本すべてを一度に見せる */}
+      <ul className="linelist">
+        {lines.map((l, i) => {
+          const ld = difficultyOf(l);
+          return (
+            <li key={l.id} className={`ll-row${i === index ? ' selected' : ''}`}>
+              <span className="ll-cursor">{i === index ? '▸' : ''}</span>
+              <span className="ll-color" style={{ background: l.lineColor }} />
+              <span className="ll-name">
+                <Furigana kana={l.nameKana}>{l.nameJp}</Furigana>
+              </span>
+              <span className={`ll-stars r${ld.rank}`}>{ld.stars}</span>
+            </li>
+          );
+        })}
+      </ul>
 
+      {/* 選択中の路線の詳細 */}
       <div className="mapselect-card" style={{ ['--line-color' as string]: current.lineColor }}>
         <div className="ms-title">
           <span className="ms-type">{current.trainType}</span>
@@ -57,7 +69,6 @@ export function LineSelectScreen({ lines, index, bestOf }: Props) {
           <Furigana kana={dest.kana}>{dest.kanji}</Furigana>
         </div>
         <div className="ms-facts">
-          <span className="ms-stars">{d.stars}</span>
           <span className="ms-word">{d.word}</span>
           <span>{current.stops.length}えき</span>
           <span className="ms-best">{best === null ? 'きろくなし' : `¥${best.toLocaleString('ja-JP')}`}</span>

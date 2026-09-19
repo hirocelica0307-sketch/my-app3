@@ -45,7 +45,7 @@ export function App() {
       reachedKanji: s.reachedKanji, reachedCount: s.reachedCount, km: s.km,
       keystrokes: s.keystrokes, correct: s.correct, misses: s.misses,
       accuracy: s.accuracy, kpm: s.kpm, maxCombo: s.maxCombo, laps: s.laps,
-      playedAt: Date.now(),
+      passengers: s.passengers, playedAt: Date.now(),
     }, s.elapsedSec);
     refreshBest(s.lineId, s.timeLimit as TimeLimit);
     return isBest;
@@ -219,6 +219,10 @@ export function App() {
               else if (key === 'Escape') engine.openLineSelect();
               break;
             }
+            // カウントダウン中・折り返し中も止められるようにする。
+            // 「今は押しても効かない瞬間」があると、やめられないと思われる。
+            case 'countdown':
+            case 'turnaround':
             case 'atStation':
             case 'departing':
               if (key === 'Escape') engine.setPaused(true);
@@ -285,9 +289,10 @@ export function App() {
           />
         )}
 
-        {snap.phase === 'countdown' && (
+        {snap.phase === 'countdown' && !snap.paused && (
           <CountdownScreen
             count={snap.countdown}
+            departureCall={snap.departureCall}
             lineName={line.nameJp}
             destination={line.destination}
           />

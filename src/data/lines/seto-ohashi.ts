@@ -25,7 +25,7 @@ export const SETO_OHASHI_LINE: Line = {
   trainType: '快速',
   stops: STOPS,
   segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main',
+  fareRule: 'jr-main',
   difficultyOverride: 34,
   scopeNote: '岡山〜高松　15駅・約72km（瀬戸大橋を渡ります）',
 };

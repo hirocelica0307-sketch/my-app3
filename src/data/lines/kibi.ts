@@ -24,7 +24,7 @@ export const KIBI_LINE: Line = {
   trainType: '普通',
   stops: STOPS,
   segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main',
+  fareRule: 'jr-local',
   difficultyOverride: 14,
   scopeNote: '岡山〜総社　10駅・約20km',
 };

@@ -30,6 +30,8 @@ export interface RunSummary {
   wpm: number;
   maxCombo: number;
   laps: number;
+  /** のべ何人のせて走ったか。 */
+  passengers: number;
 }
 
 export function comboBonus(totalComboStations: number): number {
@@ -47,7 +49,7 @@ export function buildSummary(input: {
   reachedCount: number; km: number;
   timeLimit: number; elapsedSec: number;
   baseFare: number; bonus: number;
-  stats: RunStats; maxCombo: number; laps: number;
+  stats: RunStats; maxCombo: number; laps: number; passengers: number;
 }): RunSummary {
   const { stats, elapsedSec } = input;
   return {

@@ -17,6 +17,6 @@ export const GEIBI_LINE: Line = {
   company: 'JR西日本', lineColor: '#7a5aa8', vehicle: 'kiha120-mizurin',
   destination: '備後落合', originName: '備中神代', trainType: '普通',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', difficultyOverride: 84,
+  fareRule: 'jr-local', difficultyOverride: 84,
   scopeNote: '備中神代〜備後落合　11駅・約48km（最難読）',
 };

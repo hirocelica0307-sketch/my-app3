@@ -3,7 +3,9 @@ import { getStation } from '../../data/stations';
 import { createTypingState } from '../typing/matcher';
 import type { TypingState } from '../typing/types';
 import { emptyStats, type RunStats } from '../typing/stats';
-import { calcFareById } from './fare';
+import { calcFare, calcSurcharge } from './fare';
+import { getFareRule } from '../../data/fareTable';
+import { boardingAt } from './passengers';
 import { COMBO_BONUS_PER_STATION, TERMINAL_BONUS_RATE } from './scoring';
 
 /**
@@ -38,6 +40,13 @@ export class RunContext {
   comboStations = 0;
   missesAtStation = 0;
   reachedCount = 0;
+  /** いま車内にいる人数。 */
+  onboard = 0;
+  /** この走行でのべ何人が乗ったか。記録に残す値。 */
+  passengersTotal = 0;
+  /** 直前の駅での乗り降り。HUD に出す。 */
+  lastBoardedOn = 0;
+  lastBoardedOff = 0;
 
   constructor(line: Line) {
     this.line = line;
@@ -66,9 +75,15 @@ export class RunContext {
     return this.line.segments[Math.min(Math.max(i, 0), this.line.segments.length - 1)]!;
   }
 
+  /** 運賃（新幹線は自由席特急料金を含む）。実際のきっぷと同じ通し計算。 */
   get baseFare(): number {
-    return calcFareById(this.line.fareRule, this.km);
+    const rule = getFareRule(this.line.fareRule);
+    return calcFare(rule, this.km, this.reachedCount)
+      + calcSurcharge(this.line.surchargeRule, this.km);
   }
+
+  /** 直前の1駅で増えた額。「1駅ごとにいくら増えたか」を見せるために使う。 */
+  lastFareIncrease = 0;
 
   get bonus(): number {
     const combo = this.comboStations * COMBO_BONUS_PER_STATION;
@@ -126,8 +141,17 @@ export class RunContext {
 
   /** 駅を打ち終えた。運賃を加算し、次の駅へ進める。 */
   completeStation(): void {
+    const before = this.baseFare;
     this.km += this.currentSegment().km;
     this.reachedCount++;
+    this.lastFareIncrease = this.baseFare - before;
+
+    // 乗客の乗り降り
+    const { on, off } = boardingAt(this.currentStation(), this.onboard, this.missesAtStation === 0);
+    this.onboard = this.onboard - off + on;
+    this.passengersTotal += on;
+    this.lastBoardedOn = on;
+    this.lastBoardedOff = off;
     if (this.missesAtStation === 0) {
       this.combo++;
       this.comboStations++;

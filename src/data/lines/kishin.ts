@@ -21,6 +21,6 @@ export const KISHIN_LINE: Line = {
   company: 'JR西日本', lineColor: '#4a9a8a', vehicle: 'kiha120-mizurin',
   destination: '美作土居', originName: '新見', trainType: '普通',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', difficultyOverride: 88,
+  fareRule: 'jr-local', difficultyOverride: 88,
   scopeNote: '新見〜美作土居　22駅・約92km（最長）',
 };

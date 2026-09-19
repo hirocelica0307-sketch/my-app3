@@ -16,6 +16,6 @@ export const INBI_LINE: Line = {
   company: 'JR西日本', lineColor: '#c88a2a', vehicle: 'kiha120-mizurin',
   destination: '智頭', originName: '東津山', trainType: '普通',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', difficultyOverride: 70,
+  fareRule: 'jr-local', difficultyOverride: 70,
   scopeNote: '東津山〜智頭　10駅・約34km',
 };

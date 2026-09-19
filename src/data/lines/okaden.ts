@@ -17,6 +17,6 @@ export const OKADEN_LINE: Line = {
   lineColor: '#1f7a4a', vehicle: 'momo-tram',
   destination: '東山', originName: '岡山駅前', trainType: '電車',
   stops: STOPS, segments: buildSegments(STOPS, KM, SCENES),
-  fareRule: 'jr-honshu-main', difficultyOverride: 10,
+  fareRule: 'okaden-flat', difficultyOverride: 10,
   scopeNote: '岡山駅前〜東山　10電停・約3km（いちばんやさしい）',
 };
